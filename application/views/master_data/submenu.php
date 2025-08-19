@@ -42,10 +42,7 @@
                         <td><?= $sm['menu_is_active'] ? 'Yes' : 'No'; ?></td>
                         <td>
                             <!-- Edit Button -->
-                            <a href="#"
-                                class="badge badge-success"
-                                data-toggle="modal"
-                                data-target="#editSubMenuModal<?= $sm['id_submenu']; ?>">
+                            <a href="#" class="badge badge-success" data-toggle="modal" data-target="#editSubMenuModal<?= $sm['id_submenu']; ?>">
                                 Edit
                             </a>
                         </td>
@@ -61,42 +58,40 @@
                                         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                                     </div>
                                     <div class="modal-body">
-                                        <input type="hidden" id="id_submenu" name="id_submenu" value="<?= $sm['id_submenu']; ?>">
+                                        <input type="hidden" name="id_submenu" value="<?= $sm['id_submenu']; ?>">
 
                                         <div class="form-group">
-                                            <label for="submenu_name">Sub Menu Name</label>
-                                            <input type="text" class="form-control" id="submenu_name" name="submenu_name" value="<?= $sm['submenu_name']; ?>">
+                                            <label>Sub Menu Name</label>
+                                            <input type="text" class="form-control" name="submenu_name" value="<?= $sm['submenu_name']; ?>">
                                         </div>
 
                                         <div class="form-group">
                                             <label>Menu</label>
-                                            <div class="ui search selection dropdown" id="menu_dropdown_edit_<?= $sm['id_submenu']; ?>">
-                                                <input type="hidden" id="id_menu" name="id_menu" value="<?= $sm['id_menu']; ?>">
+                                            <div class="ui search selection dropdown menu-dropdown" id="menu_dropdown_edit_<?= $sm['id_submenu']; ?>">
+                                                <input type="hidden" name="id_menu" value="<?= $sm['id_menu']; ?>">
                                                 <i class="dropdown icon"></i>
                                                 <div class="default text">Select Menu</div>
                                                 <div class="menu">
                                                     <?php foreach ($menu as $m): ?>
-                                                        <div class="item" data-value="<?= $m['id_menu']; ?>">
-                                                            <?= $m['menu_name']; ?>
-                                                        </div>
+                                                        <div class="item" data-value="<?= $m['id_menu']; ?>"><?= $m['menu_name']; ?></div>
                                                     <?php endforeach; ?>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div class="form-group">
-                                            <label for="url">URL</label>
-                                            <input type="text" class="form-control" id="menu_url" name="menu_url" value="<?= $sm['menu_url']; ?>">
+                                            <label>URL</label>
+                                            <input type="text" class="form-control" name="menu_url" value="<?= $sm['menu_url']; ?>">
                                         </div>
 
                                         <div class="form-group">
-                                            <label for="icon">Icon</label>
-                                            <input type="text" class="form-control" id="menu_icon" name="menu_icon" value="<?= $sm['menu_icon']; ?>">
+                                            <label>Icon</label>
+                                            <input type="text" class="form-control" name="menu_icon" value="<?= $sm['menu_icon']; ?>">
                                         </div>
 
                                         <div class="form-group">
                                             <div class="ui checkbox">
-                                                <input type="checkbox" id="menu_is_active" name="menu_is_active" <?= $sm['menu_is_active'] ? 'checked' : ''; ?>>
+                                                <input type="checkbox" name="menu_is_active" value="1" <?= $sm['menu_is_active'] ? 'checked' : ''; ?>>
                                                 <label>Active</label>
                                             </div>
                                         </div>
@@ -109,15 +104,12 @@
                             </div>
                         </div>
                     </div>
-
                 <?php endforeach; ?>
             </tbody>
-
         </table>
     </div>
 </div>
 <!-- End of Main Content -->
-
 
 <!-- Add New Modal -->
 <div class="modal fade" id="newSubMenuModal" tabindex="-1" role="dialog">
@@ -131,14 +123,14 @@
                 <div class="modal-body">
 
                     <div class="form-group">
-                        <label for="submenu_name">Sub Menu Name</label>
-                        <input type="text" class="form-control" id="submenu_name" name="submenu_name">
+                        <label>Sub Menu Name</label>
+                        <input type="text" class="form-control" name="submenu_name">
                     </div>
 
                     <div class="form-group">
                         <label>Menu</label>
-                        <div class="ui search selection dropdown" id="menu_name_dropdown">
-                            <input type="hidden" id="id_menu" name="id_menu">
+                        <div class="ui search selection dropdown menu-dropdown" id="menu_dropdown_add">
+                            <input type="hidden" name="id_menu">
                             <i class="dropdown icon"></i>
                             <div class="default text">Select Menu</div>
                             <div class="menu">
@@ -151,20 +143,19 @@
                         </div>
                     </div>
 
-
                     <div class="form-group">
-                        <label for="menu_url">URL</label>
-                        <input type="text" class="form-control" id="menu_url" name="menu_url">
+                        <label>URL</label>
+                        <input type="text" class="form-control" name="menu_url">
                     </div>
 
                     <div class="form-group">
-                        <label for="menu_icon">Icon</label>
-                        <input type="text" class="form-control" id="menu_icon" name="menu_icon">
+                        <label>Icon</label>
+                        <input type="text" class="form-control" name="menu_icon">
                     </div>
 
                     <div class="form-group">
                         <div class="ui checkbox">
-                            <input type="checkbox" value="1" id="menu_is_active" name="menu_is_active" checked>
+                            <input type="checkbox" name="menu_is_active" value="1" checked>
                             <label>Active</label>
                         </div>
                     </div>
@@ -179,25 +170,15 @@
     </div>
 </div>
 
-<!-- Scripts -->
+<!-- JS for Semantic UI Dropdown -->
 <script>
     $(document).ready(function() {
-        // Add New modal dropdown
-        $('#newSubMenuModal').on('shown.bs.modal', function() {
-            $('#menu_name_dropdown').dropdown({
-                fullTextSearch: true
-            });
-            $('.ui.checkbox').checkbox();
-        });
+        // Initialize all dropdowns
+        $('.menu-dropdown').dropdown();
 
-        // Edit modal dropdowns
+        // Preselect values for edit modals
         <?php foreach ($submenu as $sm): ?>
-            $('#editSubMenuModal<?= $sm['id_submenu']; ?>').on('shown.bs.modal', function() {
-                $('#menu_dropdown_edit_<?= $sm['id_submenu']; ?>').dropdown({
-                    fullTextSearch: true
-                });
-                $('.ui.checkbox').checkbox();
-            });
+            $('#menu_dropdown_edit_<?= $sm['id_submenu']; ?>').dropdown('set selected', '<?= $sm['id_menu']; ?>');
         <?php endforeach; ?>
     });
 </script>

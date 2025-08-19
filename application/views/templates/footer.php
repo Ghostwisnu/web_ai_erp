@@ -39,24 +39,65 @@
     </div>
 </div>
 
-<!-- jQuery -->
-<script src="<?= base_url('assets/'); ?>vendor/jquery/jquery.min.js"></script>
-
-<!-- Bootstrap core JavaScript -->
+<!-- Bootstrap JS FIRST -->
 <script src="<?= base_url('assets/'); ?>vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-<!-- Semantic UI -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
-<script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
+<!-- Keep references to Bootstrap plugins BEFORE loading Semantic UI -->
+<script>
+    // save Bootstrap's plugins
+    var bootstrapModal = $.fn.modal;
+    var bootstrapDropdown = $.fn.dropdown;
+</script>
 
-
-<!-- Core plugin JavaScript-->
-<script src="<?= base_url('assets/'); ?>vendor/jquery-easing/jquery.easing.min.js"></script>
-
-<!-- Custom scripts for all pages-->
-<script src="<?= base_url('assets/'); ?>js/sb-admin-2.min.js"></script>
+<!-- Now load Semantic UI JS -->
+<script src="https://cdn.jsdelivr.net/npm/semantic-ui/dist/semantic.min.js"></script>
 
 <script>
+    // // Save Semantic UI plugins under conflict-free names
+    // $.fn.semanticDropdown = $.fn.dropdown;
+    // $.fn.semanticModal = $.fn.modal;
+
+    // // Restore Bootstrap plugins to their default names
+    // $.fn.modal = bootstrapModal; // so data-toggle="modal" keeps working
+    // $.fn.dropdown = bootstrapDropdown; // keeps any Bootstrap dropdowns working
+
+    // Initialize controls
+    $(function() {
+        // Conflict handling already done above
+
+        // Initialize dropdowns when modal is shown
+        $(document).on('shown.bs.modal', function(e) {
+            var $modal = $(e.target);
+
+            // Initialize Semantic UI dropdowns only once per element
+            $modal.find('.ui.dropdown').each(function() {
+                var $dd = $(this);
+                if (!$dd.data('moduleDropdown')) {
+                    $dd.semanticDropdown({
+                        fullTextSearch: true,
+                        clearable: true
+                    });
+                }
+            });
+
+            // Initialize checkboxes if you have any
+            $modal.find('.ui.checkbox').checkbox();
+        });
+    });
+</script>
+
+<!-- (Optional) DataTables JS after everything else -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.semanticui.min.js"></script>
+
+
+<script>
+    $(document).ready(function() {
+        $('#myTable').DataTable({
+            // optional: enable Semantic UI styling
+            "pagingType": "full_numbers"
+        });
+    });
     $('.custom-file-input').on('change', function() {
         let fileName = $(this).val().split('\\').pop();
         $(this).next('.custom-file-label').addClass("selected").html(fileName);
@@ -80,32 +121,8 @@
             }
         });
     });
-    $(document).ready(function() {
-        $('#editMenuModal').on('show.bs.modal', function(event) {
-            var button = $(event.relatedTarget);
-            var id = button.data('id');
-            var name = button.data('name');
-
-            var modal = $(this);
-            modal.find('#edit-id-menu').val(id);
-            modal.find('#edit-menu-name').val(name);
-            modal.find('#edit-id-submenu').val(id);
-            modal.find('#edit-submenu-name').val(name);
-            modal.find('#edit-id-role').val(id);
-            modal.find('#edit-role-name').val(name);
-        });
-    });
-    // Save Semantic UI dropdown to a new function name so Bootstrap won't override it
-    $.fn.semanticDropdown = $.fn.dropdown;
-
-    // Initialize search dropdown when modal is opened
-    $('#newSubMenuModal').on('shown.bs.modal', function() {
-        $('#menu_name_dropdown').semanticDropdown({
-            fullTextSearch: true,
-            clearable: true
-        });
-    });
 </script>
+
 
 </body>
 

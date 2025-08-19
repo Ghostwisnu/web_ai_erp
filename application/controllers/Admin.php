@@ -7,8 +7,8 @@ class Admin extends CI_Controller
     {
         parent::__construct();
         // Load necessary libraries and models
-        $this->load->library('session');
-        $this->load->model('General_model');
+        // $this->load->library('session');
+        // $this->load->model('General_model');
 
         // Check if user is logged in
         is_logged_in();

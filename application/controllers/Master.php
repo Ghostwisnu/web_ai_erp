@@ -435,4 +435,124 @@ class Master extends CI_Controller
             redirect('master/size/' . $id_brand);
         }
     }
+
+    public function dept()
+    {
+        $data['title'] = 'Departement'; // atau 'Departement' kalau tetap
+        $data['user']  = $this->General_model->get_row_where(
+            'master_user',
+            ['user_email' => $this->session->userdata('email')]
+        );
+        // $data['depts'] = $this->General_model->get_all_data('master_dept');
+
+        $this->load->view('templates/header', $data);
+        $this->load->view('templates/sidebar', $data);
+        $this->load->view('templates/topbar', $data);
+        $this->load->view('master_data/dept', $data);
+        $this->load->view('templates/footer');
+    }
+
+    // === LIST: hanya tampilkan yang delete_status = 0 ===
+    public function dept_list()
+    {
+        // No-cache headers
+        $this->output
+            ->set_header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0')
+            ->set_header('Cache-Control: post-check=0, pre-check=0', false)
+            ->set_header('Pragma: no-cache')
+            ->set_content_type('application/json');
+
+        $rows = $this->db->select('id_dept, kode_dept, dept_name, created_at, created_by')
+            ->from('master_dept')
+            ->where('delete_status', 0)
+            ->order_by('created_at', 'DESC')
+            ->get()->result_array();
+
+        return $this->output->set_output(json_encode(['data' => $rows]));
+    }
+
+
+    // === CREATE: tambah data baru ===
+    public function dept_create()
+    {
+        $this->output->set_content_type('application/json');
+
+        $payload   = json_decode($this->input->raw_input_stream, true);
+        $kode_dept = strtoupper(trim($payload['kode_dept'] ?? ''));  // <-- UPPER
+        $dept_name = strtoupper(trim($payload['dept_name'] ?? ''));  // <-- UPPER
+
+        if ($kode_dept === '' || $dept_name === '') {
+            return $this->output->set_status_header(400)
+                ->set_output(json_encode(['error' => 'kode_dept dan dept_name wajib diisi']));
+        }
+
+        // Duplikat aktif (case-insensitive) -> karena kita simpan uppercase, cukup compare langsung
+        $dup = $this->db->select('id_dept')
+            ->from('master_dept')
+            ->where('delete_status', 0)
+            ->group_start()
+            ->where('kode_dept', $kode_dept)
+            ->or_where('dept_name', $dept_name)
+            ->group_end()
+            ->get()->row_array();
+
+        if ($dup) {
+            return $this->output->set_status_header(409)
+                ->set_output(json_encode(['error' => 'Kode/Nama Departemen sudah ada']));
+        }
+
+        $now     = date('Y-m-d H:i:s');
+        $creator = $this->session->userdata('email') ?? 'system';
+
+        $data = [
+            'kode_dept'     => $kode_dept,
+            'dept_name'     => $dept_name,
+            'created_at'    => $now,
+            'created_by'    => $creator,
+            'delete_status' => 0,
+            'delete_by'     => '',
+            'delete_at'     => NULL,  // <-- JANGAN '0000-00-00 00:00:00'
+        ];
+
+        $ok = $this->General_model->insert_data('master_dept', $data);
+        if (!$ok) {
+            return $this->output->set_status_header(500)
+                ->set_output(json_encode(['error' => 'Gagal menyimpan data']));
+        }
+
+        return $this->output->set_output(json_encode(['success' => true]));
+    }
+
+
+    // === SOFT DELETE: set delete_status=1 + delete_by + delete_at ===
+    public function dept_delete()
+    {
+        $this->output->set_content_type('application/json');
+
+        $id = (int) ($this->input->post('id_dept') ?? 0);
+        if ($id <= 0) {
+            return $this->output->set_status_header(400)
+                ->set_output(json_encode(['error' => 'id_dept tidak valid']));
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $user = $this->session->userdata('email') ?? 'system';
+
+        $ok = $this->General_model->update_data(
+            'master_dept',
+            ['id_dept' => $id],
+            [
+                'delete_status' => 1,
+                'delete_by'     => $user,
+                'delete_at'     => $now
+            ]
+        );
+
+        if (!$ok) {
+            return $this->output->set_status_header(500)
+                ->set_output(json_encode(['error' => 'Gagal menghapus (soft delete)']));
+        }
+
+        return $this->output->set_output(json_encode(['success' => true]));
+    }
 }

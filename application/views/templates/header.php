@@ -22,7 +22,9 @@
     <!-- jQuery ONLY (no other JS in head) -->
     <script src="<?= base_url('assets/'); ?>vendor/jquery/jquery.min.js"></script>
 
-
+    <script>
+        const base_url = "<?= base_url(); ?>";
+    </script>
 
 </head>
 

@@ -18,6 +18,7 @@
                         <th scope="col">Print PDF</th>
                         <th scope="col">B.O.M.</th>
                         <th scope="col">FG Description</th>
+                        <th scope="col">Art & Color</th>
                         <th scope="col">Unit</th>
                         <th scope="col">User</th>
                         <th scope="col">Created AT</th>
@@ -32,11 +33,13 @@
                             <td>Print</td>
                             <td><?= $br['kode_bom']; ?></td>
                             <td><?= $br['fg_item_name']; ?></td>
+                            <td><?= $br['artcolor_name']; ?></td>
                             <td><?= $br['fg_unit']; ?></td>
                             <td><?= $br['created_by']; ?></td>
                             <td><?= $br['created_at']; ?></td>
                             <td>
                                 <a href="<?= base_url('purchasing/edit_bom/' . $br['kode_bom']); ?>" class="badge badge-warning">Edit</a>
+                                <a href="<?= base_url('purchasing/create_wo/' . $br['kode_bom']); ?>" class="badge badge-primary">Create WO</a>
                                 <a href="<?= base_url('purchasing/delete_bom/' . $br['kode_bom']); ?>"
                                     class="badge badge-danger"
                                     onclick="return confirm('Are you sure you want to delete this BOM?');">

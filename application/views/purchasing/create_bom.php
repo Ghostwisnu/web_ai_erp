@@ -1,272 +1,260 @@
 <style>
     /* Wide, scrollable Semantic UI modal */
-    #newFgModal {
-        max-width: 95% !important;
-        /* almost full width */
-        width: auto !important;
-        max-height: 90vh;
-        /* limit height */
-        overflow-y: auto;
-        /* vertical scroll if content too tall */
-    }
-
-    /* Segment inside modal allows horizontal scroll */
-    #newFgModal .ui.segment {
-        overflow-x: auto;
-        /* horizontal scroll for wide tables */
-        padding: 0.5em 1em;
-    }
-
-    /* Tables keep original layout, not responsive */
-    #newFgModal table.ui.celled.table {
-        min-width: 800px;
-        /* prevent shrinking */
-        width: auto;
-        /* use natural table width */
-    }
-
-    /* Wide, scrollable Semantic UI modal for all modals */
     .wide-scrollable-modal {
         max-width: 95% !important;
-        /* almost full width */
         width: auto !important;
         max-height: 90vh;
-        /* vertical limit */
         overflow-y: auto;
-        /* vertical scroll if content too tall */
     }
 
     .wide-scrollable-modal .ui.segment {
         overflow-x: auto;
-        /* horizontal scroll for wide tables */
         padding: 0.5em 1em;
     }
 
     .wide-scrollable-modal table.ui.celled.table {
         min-width: 800px;
-        /* prevent shrinking */
         width: auto;
     }
 </style>
-<!-- Begin Page Content -->
-<div class="container-fluid">
 
-    <!-- Page Heading -->
+<div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800"><?= $title; ?></h1>
 
-    <div class="row">
-        <div class="col-lg">
-            <?= form_error('purchasing', '<div class="alert alert-danger" role="alert">', '</div') ?>
-            <?= $this->session->flashdata('message'); ?>
+    <?= form_error('purchasing', '<div class="alert alert-danger" role="alert">', '</div>') ?>
+    <?= $this->session->flashdata('message'); ?>
 
-            <!-- Back to Purchasing page -->
-            <a href="<?= base_url('purchasing'); ?>" class="ui blue button mb-3">
-                <i class="arrow left icon"></i> Back to Purchasing
-            </a>
+    <!-- Back and Select FG -->
+    <a href="<?= base_url('purchasing'); ?>" class="ui blue button mb-3"><i class="arrow left icon"></i> Back</a>
+    <button type="button" class="ui blue button" id="openFgBtn">Choose / Change FG</button>
 
-            <button type="button" class="ui blue button" id="openFgBtn">
-                Choose / Change FG
-            </button>
-            <!-- FG Info -->
-            <div class="ui form">
-                <div class="fields">
-                    <div class="six wide field">
-                        <label>FG DESCRIPTION</label>
-                        <input type="text" id="fgDescription" class="form-control" placeholder="Select FG" readonly>
-                        <input type="hidden" name="fgItemId" id="fgItemId">
-                        <input type="hidden" id="fgCategoryName">
-                        <input type="hidden" id="fgCategoryId">
-                    </div>
-                    <div class="three wide field">
-                        <label>UNIT</label>
-                        <input type="text" id="fgUnit" class="form-control" readonly>
-                        <input type="hidden" id="fgUnitId">
-                    </div>
-                    <div class="four wide field">
-                        <label>BRAND</label>
-                        <div class="ui action input">
-                            <input type="hidden" id="brandId">
-                            <input type="text" id="brandName" placeholder="Select Brand" readonly>
-                            <button type="button" class="ui teal button" id="openBrandModal">
-                                <i class="plus icon"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="seven wide field">
-                        <label>Art Color</label>
-                        <div class="ui action input">
-                            <input type="text" id="artColor" name="art_color" placeholder="Add Art Color" readonly>
-                            <button type="button" class="ui teal button" id="openArtColorModal">
-                                <i class="plus icon"></i>
-                            </button>
-                        </div>
-                    </div>
+    <!-- FG Info -->
+    <div class="ui form mt-3">
+        <div class="fields">
+            <div class="six wide field">
+                <label>FG DESCRIPTION</label>
+                <input type="text" id="fgDescription" readonly>
+                <input type="hidden" id="fgItemId">
+                <input type="hidden" id="fgCategoryId">
+                <input type="hidden" id="fgCategoryName">
+                <input type="hidden" id="fgUnitId">
+                <input type="hidden" id="fgKodeItem">
+            </div>
+            <div class="three wide field">
+                <label>UNIT</label>
+                <input type="text" id="fgUnit" readonly>
+            </div>
+            <div class="four wide field">
+                <label>BRAND</label>
+                <div class="ui action input">
+                    <input type="text" id="brandName" readonly>
+                    <button type="button" class="ui teal button" id="openBrandModal"><i class="plus icon"></i></button>
                 </div>
             </div>
-
-            <!-- Action Buttons -->
-            <div class="ui clearing segment" id="materialActions" style="display:none;">
-                <div class="ui buttons">
-                    <button type="button" class="ui blue button" id="openMaterialModal">
-                        <i class="plus icon"></i> ADD MATERIAL
-                    </button>
-                    <a href="#" id="deleteSelected" class="ui red button">
-                        <i class="trash icon"></i> DELETE MATERIAL
-                    </a>
-                    <a href="#" id="undeleteSelected" class="ui orange button">
-                        <i class="undo icon"></i> UNDELETE MATERIAL
-                    </a>
+            <div class="seven wide field">
+                <label>Art Color</label>
+                <div class="ui action input">
+                    <input type="text" id="artColor" readonly>
+                    <button type="button" class="ui teal button" id="openArtColorModal"><i class="plus icon"></i></button>
                 </div>
-            </div>
-
-
-            <table class="table table-hover" id="bomTable">
-
-                <thead class="thead-dark">
-                    <tr>
-                        <th>#</th>
-                        <th scope="col"><input type="checkbox" id="selectAll"></th>
-                        <th scope="col">MATERIAL DESCRIPTION</th>
-                        <th scope="col">CATEGORY</th>
-                        <th scope="col">UNIT</th>
-                        <th scope="col">QTY</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($bom)) : ?>
-                        <?php foreach ($bom as $index => $mat) : ?>
-                            <tr>
-                                <td><?= $index + 1 ?></td>
-                                <td><input type="checkbox" class="rowCheckbox" value="<?= $mat['id_mt_item'] ?>"></td>
-                                <td><?= $mat['mt_item_name'] ?></td>
-                                <td><?= $mat['mt_item_category'] ?></td>
-                                <td><?= $mat['mt_unit'] ?></td>
-                                <td><?= $mat['bom_qty'] ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else : ?>
-
-                    <?php endif; ?>
-                </tbody>
-            </table>
-            <div id="saveBomContainer" style="display:none; margin-top:15px;">
-                <button id="saveBomBtn" class="ui green button">
-                    <i class="save icon"></i> Save BOM
-                </button>
             </div>
         </div>
     </div>
-    <!-- /.container-fluid -->
 
+    <!-- HFG Section -->
+    <button type="button" class="ui blue button mt-2" id="openHfgBtn">Add HFG</button>
+    <table class="ui celled table" id="hfgTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>HFG NAME</th>
+                <th>UNIT</th>
+                <th>Materials</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- HFG rows populated via JS -->
+        </tbody>
+    </table>
+
+    <!-- Save BOM -->
+    <button class="ui green button" id="saveEntireBomBtn"><i class="save icon"></i> Save Entire BOM</button>
 </div>
-<!-- End of Main Content -->
 
-<!-- Modal -->
-<div class="ui modal" id="newFgModal">
+<!-- FG Modal -->
+<div class="ui modal wide-scrollable-modal" id="fgModal">
     <i class="close icon"></i>
-    <div class="header">Select Item</div>
+    <div class="header">Select Finish Good</div>
+    <div class="ui segment">
+        <table class="ui celled table" id="finishGoodsTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Select</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Kode Item</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($finish_goods as $i => $fg): ?>
+                    <tr>
+                        <td><?= $i + 1 ?></td>
+                        <td>
+                            <button class="ui tiny blue button select-fg"
+                                data-id="<?= $fg['item_id'] ?>"
+                                data-name="<?= $fg['item_name'] ?>"
+                                data-unit-id="<?= $fg['unit_id'] ?>"
+                                data-unit-name="<?= $fg['unit_name'] ?>"
+                                data-cat-id="<?= $fg['category_id'] ?>"
+                                data-cat-name="<?= $fg['category_name'] ?>"
+                                data-kode-item="<?= $fg['kode_item'] ?>">✔ Select</button>
+                        </td>
+                        <td><?= $fg['item_name'] ?></td>
+                        <td><?= $fg['category_name'] ?></td>
+                        <td><?= $fg['unit_name'] ?></td>
+                        <td><?= $fg['kode_item'] ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- HFG Modal -->
+<div class="ui modal wide-scrollable-modal" id="hfgModal">
+    <i class="close icon"></i>
+    <div class="header">Select Half Finish Good</div>
+    <div class="ui segment">
+        <table class="ui celled table" id="halfFinishGoodsTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Select</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Kode Item</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($half_finish_goods as $i => $hfg): ?>
+                    <tr>
+                        <td><?= $i + 1 ?></td>
+                        <td>
+                            <button class="ui tiny blue button select-hfg"
+                                data-id="<?= $hfg['item_id'] ?>"
+                                data-name="<?= $hfg['item_name'] ?>"
+                                data-unit-id="<?= $hfg['unit_id'] ?>"
+                                data-unit-name="<?= $hfg['unit_name'] ?>"
+                                data-cat-id="<?= $hfg['category_id'] ?>"
+                                data-cat-name="<?= $hfg['category_name'] ?>"
+                                data-kode-item="<?= $hfg['kode_item'] ?>">✔ Select</button>
+                        </td>
+                        <td><?= $hfg['item_name'] ?></td>
+                        <td><?= $hfg['category_name'] ?></td>
+                        <td><?= $hfg['unit_name'] ?></td>
+                        <td><?= $hfg['kode_item'] ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Material Modal -->
+<div class="ui modal wide-scrollable-modal" id="materialModal">
+    <i class="close icon"></i>
+    <div class="header">Select Material / HFG</div>
 
     <div class="ui top attached tabular menu">
-        <a class="active item" data-tab="finishGoods">FINISH GOODS</a>
-        <a class="item" data-tab="halfFinishGoods">HALF FINISH GOODS</a>
+        <a class="item active" data-tab="material-tab">Materials</a>
+        <a class="item" data-tab="hfg-tab">Half Finished Goods (HFG)</a>
     </div>
 
-    <div class="ui bottom attached tab segment active" data-tab="finishGoods">
-        <div class="ui segment">
-            <table class="ui celled table" id="finishTable">
-                <thead>
+    <!-- Material Tab -->
+    <div class="ui bottom attached tab segment active" data-tab="material-tab">
+        <table class="ui celled table" id="materialItemsTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Qty</th>
+                    <th>Select</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Kode Item</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($material_items as $i => $mt): ?>
                     <tr>
-                        <th>#</th>
-                        <th>Select</th>
-                        <th>ITEM NAME</th>
-                        <th>CATEGORY</th>
-                        <th>UNIT</th>
+                        <td><?= $i + 1 ?></td>
+                        <td><input type="number" min="1" value="1" class="modal-qty" data-id="<?= $mt['item_id'] ?>"></td>
+                        <td>
+                            <button class="ui tiny blue button select-material"
+                                data-id="<?= $mt['item_id'] ?>"
+                                data-name="<?= $mt['item_name'] ?>"
+                                data-unit-id="<?= $mt['unit_id'] ?>"
+                                data-unit-name="<?= $mt['unit_name'] ?>"
+                                data-cat-id="<?= $mt['category_id'] ?>"
+                                data-cat-name="<?= $mt['category_name'] ?>"
+                                data-kode-item="<?= $mt['kode_item'] ?>">✔ Select</button>
+                        </td>
+                        <td><?= $mt['item_name'] ?></td>
+                        <td><?= $mt['category_name'] ?></td>
+                        <td><?= $mt['unit_name'] ?></td>
+                        <td><?= $mt['kode_item'] ?></td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($finish_goods as $i => $item): ?>
-                        <tr>
-                            <td><?= $i + 1 ?></td>
-                            <td>
-                                <button
-                                    class="ui tiny blue button select-item"
-                                    data-item-id="<?= $item['item_id'] ?>"
-                                    data-item-name="<?= $item['item_name'] ?>"
-                                    data-category-id="<?= $item['category_id'] ?>"
-                                    data-category-name="<?= $item['category_name'] ?>"
-                                    data-unit-id="<?= $item['unit_id'] ?>"
-                                    data-unit-name="<?= $item['unit_name'] ?>">✔ Select</button>
-                            </td>
-                            <td><?= $item['item_name'] ?></td>
-                            <td><?= $item['category_name'] ?></td>
-                            <td><?= $item['unit_name'] ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 
-    <div class="ui bottom attached tab segment" data-tab="halfFinishGoods">
-        <div class="ui segment">
-            <table class="ui celled table" id="halfFinishTable">
-                <thead>
+    <!-- HFG Tab -->
+    <div class="ui bottom attached tab segment" data-tab="hfg-tab">
+        <table class="ui celled table" id="materialHfgTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Qty</th>
+                    <th>Select</th>
+                    <th>HFG Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>Kode Item</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($half_finish_goods as $i => $hfg): ?>
                     <tr>
-                        <th>#</th>
-                        <th>Select</th>
-                        <th>ITEM NAME</th>
-                        <th>CATEGORY</th>
-                        <th>UNIT</th>
+                        <td><?= $i + 1 ?></td>
+                        <td><input type="number" min="1" value="1" class="modal-qty" data-id="<?= $hfg['item_id'] ?>"></td>
+                        <td>
+                            <button class="ui tiny blue button select-hfg-as-material"
+                                data-id="<?= $hfg['item_id'] ?>"
+                                data-name="<?= $hfg['item_name'] ?>"
+                                data-unit-id="<?= $hfg['unit_id'] ?>"
+                                data-unit-name="<?= $hfg['unit_name'] ?>"
+                                data-cat-id="<?= $hfg['category_id'] ?>"
+                                data-cat-name="<?= $hfg['category_name'] ?>"
+                                data-kode-item="<?= $hfg['kode_item'] ?>">✔ Select</button>
+                        </td>
+                        <td><?= $hfg['item_name'] ?></td>
+                        <td><?= $hfg['category_name'] ?></td>
+                        <td><?= $hfg['unit_name'] ?></td>
+                        <td><?= $hfg['kode_item'] ?></td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($half_finish_goods as $i => $item): ?>
-                        <tr>
-                            <td><?= $i + 1 ?></td>
-                            <td>
-                                <button
-                                    class="ui tiny blue button select-item"
-                                    data-item-id="<?= $item['item_id'] ?>"
-                                    data-item-name="<?= $item['item_name'] ?>"
-                                    data-category-id="<?= $item['category_id'] ?>"
-                                    data-category-name="<?= $item['category_name'] ?>"
-                                    data-unit-id="<?= $item['unit_id'] ?>"
-                                    data-unit-name="<?= $item['unit_name'] ?>">✔ Select</button>
-                            </td>
-                            <td><?= $item['item_name'] ?></td>
-                            <td><?= $item['category_name'] ?></td>
-                            <td><?= $item['unit_name'] ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 </div>
-
-<div class="ui modal" id="artColorModal">
-    <div class="header">Add Art Color</div>
-    <div class="content">
-        <form id="artColorForm" class="ui form">
-            <div class="two fields">
-                <div class="field">
-                    <label>Art</label>
-                    <input type="text" id="artInput" placeholder="Enter Art">
-                </div>
-                <div class="field">
-                    <label>Color</label>
-                    <input type="text" id="colorInput" placeholder="Enter Color">
-                </div>
-            </div>
-            <button type="submit" class="ui primary button">OK</button>
-        </form>
-    </div>
-</div>
-
+<!-- Brand Modal -->
 <div class="ui modal wide-scrollable-modal" id="brandModal">
     <i class="close icon"></i>
     <div class="header">Select Brand</div>
-
     <div class="ui segment">
         <table class="ui celled table" id="brandTable">
             <thead>
@@ -277,16 +265,11 @@
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($master_brand as $i => $brand): ?>
+                <?php foreach ($master_brand as $i => $b): ?>
                     <tr>
                         <td><?= $i + 1 ?></td>
-                        <td>
-                            <button
-                                class="ui tiny blue button select-brand"
-                                data-brand-id="<?= $brand['id_brand'] ?>"
-                                data-brand-name="<?= $brand['brand_name'] ?>">✔ Select</button>
-                        </td>
-                        <td><?= $brand['brand_name'] ?></td>
+                        <td><button class="ui tiny blue button select-brand" data-name="<?= $b['brand_name'] ?>">✔ Select</button></td>
+                        <td><?= $b['brand_name'] ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -294,326 +277,233 @@
     </div>
 </div>
 
-<div class="ui modal wide-scrollable-modal" id="materialModal">
+<!-- ArtColor Modal -->
+<div class="ui modal wide-scrollable-modal" id="artColorModal">
     <i class="close icon"></i>
-    <div class="header">Select Material</div>
-
-    <!-- Tabs -->
-    <div class="ui top attached tabular menu">
-        <a class="active item" data-tab="materialTab">MATERIAL</a>
-        <a class="item" data-tab="semiFinishedTab">BARANG SETENGAH JADI</a>
-    </div>
-
-    <!-- Material Tab -->
-    <div class="ui bottom attached tab segment active" data-tab="materialTab">
-        <div class="ui segment">
-            <table class="ui celled table" id="materialOnlyTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Select</th>
-                        <th>ITEM NAME</th>
-                        <th>CATEGORY</th>
-                        <th>UNIT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($material_items as $i => $mat): ?>
-                        <?php if ($mat['category_name'] == 'Material'): ?>
-                            <tr>
-                                <td><?= $i + 1 ?></td>
-                                <td>
-                                    <button
-                                        class="ui tiny blue button select-material"
-                                        data-item-id="<?= $mat['item_id'] ?>"
-                                        data-item-name="<?= $mat['item_name'] ?>"
-                                        data-unit-id="<?= $mat['unit_id'] ?>"
-                                        data-unit-name="<?= $mat['unit_name'] ?>"
-                                        data-category-id="<?= $mat['category_id'] ?>"
-                                        data-category-name="<?= $mat['category_name'] ?>">✔ Select</button>
-                                </td>
-                                <td><?= $mat['item_name'] ?></td>
-                                <td><?= $mat['category_name'] ?></td>
-                                <td><?= $mat['unit_name'] ?></td>
-                            </tr>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Semi-Finished Tab -->
-    <div class="ui bottom attached tab segment" data-tab="semiFinishedTab">
-        <div class="ui segment">
-            <table class="ui celled table" id="semiFinishedTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Select</th>
-                        <th>ITEM NAME</th>
-                        <th>CATEGORY</th>
-                        <th>UNIT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($material_items as $i => $mat): ?>
-                        <?php if ($mat['category_name'] == 'Barang Setengah Jadi'): ?>
-                            <tr>
-                                <td><?= $i + 1 ?></td>
-                                <td>
-                                    <button
-                                        class="ui tiny blue button select-material"
-                                        data-item-id="<?= $mat['item_id'] ?>"
-                                        data-item-name="<?= $mat['item_name'] ?>"
-                                        data-unit-id="<?= $mat['unit_id'] ?>"
-                                        data-unit-name="<?= $mat['unit_name'] ?>"
-                                        data-category-id="<?= $mat['category_id'] ?>"
-                                        data-category-name="<?= $mat['category_name'] ?>">✔ Select</button>
-                                </td>
-                                <td><?= $mat['item_name'] ?></td>
-                                <td><?= $mat['category_name'] ?></td>
-                                <td><?= $mat['unit_name'] ?></td>
-                            </tr>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+    <div class="header">Input Art and Color</div>
+    <div class="ui segment">
+        <div class="ui form">
+            <div class="two fields">
+                <div class="field">
+                    <label>Art</label>
+                    <input type="text" id="artInput">
+                </div>
+                <div class="field">
+                    <label>Color</label>
+                    <input type="text" id="colorInput">
+                </div>
+            </div>
+            <button type="button" class="ui green button" id="saveArtColorBtn">Save</button>
         </div>
     </div>
 </div>
-
 </div>
-
 <script>
     $(document).ready(function() {
 
-        // ============================
-        // Reusable function to init modal with tabs and tables
-        // ============================
-        function initModalWithTabs(modalId, tableIds = []) {
-            const $modal = $(modalId);
+        let hfgData = [];
 
-            // Initialize Semantic UI modal
-            $modal.modal({
-                closable: true,
-                autofocus: false,
-                transition: 'scale',
-                onShow: function() {
-                    $.fn.dataTable.tables({
-                        visible: true,
-                        api: true
-                    }).columns.adjust();
-                }
-            });
-
-            // Initialize tabs inside modal
-            $modal.find('.menu .item').tab({
-                onVisible: function(tabPath) {
-                    $.fn.dataTable.tables({
-                        visible: true,
-                        api: true
-                    }).columns.adjust();
-                }
-            });
-
-            // Initialize DataTables
-            tableIds.forEach(function(tableId) {
-                $(tableId).DataTable({
-                    responsive: false,
-                    scrollX: true
-                });
-            });
-        }
-
-        // ============================
-        // Initialize all modals
-        // ============================
-        initModalWithTabs('#newFgModal', ['#finishTable', '#halfFinishTable']);
-        initModalWithTabs('#materialModal', ['#materialOnlyTable', '#semiFinishedTable']);
-
-        $('#brandModal').modal({
-            closable: true,
-            autofocus: false,
-            transition: 'scale'
-        });
-        $('#brandTable').DataTable({
-            responsive: false,
-            scrollX: true
+        // Show modals
+        $('#openFgBtn').click(() => $('#fgModal').modal('show'));
+        $('#openHfgBtn').click(() => $('#hfgModal').modal('show'));
+        $('#openBrandModal').click(() => $('#brandModal').modal('show'));
+        $('#openArtColorModal').click(() => $('#artColorModal').modal('show'));
+        // Initialize searchable tables inside the Material Modal
+        $('#materialItemsTable').DataTable({
+            paging: true,
+            searching: true, // enables search
+            info: false,
+            lengthChange: false
         });
 
-        $('#artColorModal').modal({
-            closable: true,
-            autofocus: false,
-            transition: 'scale'
+        $('#materialHfgTable').DataTable({
+            paging: true,
+            searching: true,
+            info: false,
+            lengthChange: false
         });
 
-        // ============================
-        // Open modal triggers
-        // ============================
-        $('#openFgBtn, #fgDescription, #fgUnit').on('click', function() {
-            $('#newFgModal').modal('show');
-        });
-        $('#openMaterialModal').on('click', function() {
-            $('#materialModal').modal('show');
-        });
-        $('#openBrandModal, #brandName').on('click', function() {
-            $('#brandModal').modal('show');
-        });
-        $('#openArtColorModal').on('click', function() {
-            $('#artColorModal').modal('show');
+
+        // Initialize Material modal tabs
+        $('#materialModal .menu .item').tab();
+
+        // FG select
+        $('.select-fg').click(function() {
+            $('#fgItemId').val($(this).data('id'));
+            $('#fgDescription').val($(this).data('name'));
+            $('#fgUnit').val($(this).data('unit-name'));
+            $('#fgCategoryId').val($(this).data('cat-id'));
+            $('#fgCategoryName').val($(this).data('cat-name'));
+            $('#fgKodeItem').val($(this).data('kode-item'));
+            $('#fgModal').modal('hide');
         });
 
-        // ============================
-        // FG Selection
-        // ============================
-        $('#newFgModal').on('click', '.select-item', function() {
-            const btn = $(this);
-            $('#fgDescription').val(btn.data('item-name'));
-            $('#fgUnit').val(btn.data('unit-name'));
-            $('#fgItemId').val(btn.data('item-id'));
-            $('#fgCategoryName').val(btn.data('category-name'));
-            $('#fgCategoryId').val(btn.data('category-id'));
-            $('#fgUnitId').val(btn.data('unit-id'));
-
-            $('#materialActions').show();
-            $('#newFgModal').modal('hide');
+        // HFG select
+        $(document).on('click', '.select-hfg', function() {
+            if (hfgData.length >= 6) {
+                alert("Maximum 6 HFGs allowed.");
+                return;
+            }
+            let hfg = {
+                id: $(this).data('id'),
+                name: $(this).data('name'),
+                unit: $(this).data('unit-name'),
+                catName: $(this).data('cat-name'),
+                kode: $(this).data('kode-item'),
+                materials: []
+            };
+            hfgData.push(hfg);
+            renderHfgTable();
+            $('#hfgModal').modal('hide');
         });
 
-        // ============================
-        // Material Selection
-        // ============================
-        $('#materialModal').on('click', '.select-material', function() {
-            const btn = $(this);
-            const row = `
-            <tr>
-                <td>*</td>
-                <td><input type="checkbox" class="rowCheckbox"></td>
-                <td>${btn.data('item-name')}</td>
-                <td>${btn.data('category-name')}</td>
-                <td>${btn.data('unit-name')}</td>
-                <td><input type="number" class="form-control material-qty" value="1"></td>
-                <td style="display:none;" class="material-id">${btn.data('item-id')}</td>
-                <td style="display:none;" class="material-name">${btn.data('item-name')}</td>
-                <td style="display:none;" class="unit-id">${btn.data('unit-id')}</td>
-                <td style="display:none;" class="category-id">${btn.data('category-id')}</td>
+        function renderHfgTable() {
+            let tbody = '';
+            hfgData.forEach((hfg, index) => {
+                tbody += `<tr>
+            <td>${index+1}</td>
+            <td>${hfg.name}</td>
+            <td>${hfg.unit}</td>
+            <td>
+                <button class="ui tiny blue button add-material-btn" data-index="${index}">Add Material</button>
+                <button class="ui tiny red button delete-hfg-btn" data-hfg="${index}">Delete HFG</button>
+                <table class="ui celled table mt-material" style="margin-top:5px;">
+                    <thead><tr><th>Material</th><th>Qty</th><th>Action</th></tr></thead>
+                    <tbody>`;
+                hfg.materials.forEach((mt, mi) => {
+                    tbody += `<tr>
+                <td>${mt.name}</td>
+                <td><input type="number" min="0.0001" step="0.0001" value="${mt.qty}" class="material-qty" data-hfg="${index}" data-mt="${mi}"></td>
+                <td><button class="ui tiny red button delete-material-btn" data-hfg="${index}" data-mt="${mi}">Delete</button></td>
             </tr>`;
-            $('#bomTable tbody').append(row);
-            $('#materialModal').modal('hide');
-            $('#saveBomContainer').show();
+                });
+                tbody += `</tbody></table>
+            </td>
+        </tr>`;
+            });
+            $('#hfgTable tbody').html(tbody);
+        }
+        // Delete HFG
+        $(document).on('click', '.delete-hfg-btn', function() {
+            let hfgIdx = $(this).data('hfg');
+            if (confirm("Are you sure you want to delete this HFG?")) {
+                hfgData.splice(hfgIdx, 1); // remove HFG
+                renderHfgTable(); // re-render table
+            }
         });
 
-        // ============================
-        // Brand Selection
-        // ============================
-        $('#brandModal').on('click', '.select-brand', function() {
-            const btn = $(this);
-            $('#brandName').val(btn.data('brand-name'));
-            $('#brandId').val(btn.data('brand-id'));
+        // Delete material
+        $(document).on('click', '.delete-material-btn', function() {
+            let hfgIdx = $(this).data('hfg');
+            let mtIdx = $(this).data('mt');
+            hfgData[hfgIdx].materials.splice(mtIdx, 1); // remove material
+            renderHfgTable(); // re-render table
+        });
+
+        // Show Material modal when adding material to HFG
+        $(document).on('click', '.add-material-btn', function() {
+            $('#materialModal').modal('show').data('hfgIndex', $(this).data('index'));
+            // Default to Materials tab
+            $('#materialModal .menu .item').tab('change tab', 'material-tab');
+        });
+
+        // Select material (Material tab or HFG-as-material tab)
+        $(document).on('click', '.select-material, .select-hfg-as-material', function() {
+            let idx = $('#materialModal').data('hfgIndex');
+            if (idx === undefined) return;
+
+            let qty = $(this).closest('tr').find('.modal-qty').val() || 1;
+            let mt = {
+                id: $(this).data('id'),
+                name: $(this).data('name'),
+                unit: $(this).data('unit-name'),
+                catName: $(this).data('cat-name'),
+                kode: $(this).data('kode-item'),
+                qty: parseFloat(qty)
+            };
+
+            // Prevent duplicates
+            let exists = hfgData[idx].materials.some(m => m.id === mt.id && m.kode === mt.kode);
+            if (!exists) {
+                hfgData[idx].materials.push(mt);
+                renderHfgTable();
+            } else {
+                alert("This material is already added for this HFG.");
+            }
+
+            $('#materialModal').modal('hide');
+        });
+
+        // Update material qty
+        $(document).on('change', '.material-qty', function() {
+            let hfgIdx = $(this).data('hfg');
+            let mtIdx = $(this).data('mt');
+            hfgData[hfgIdx].materials[mtIdx].qty = parseFloat($(this).val());
+        });
+
+        // Brand select
+        $('.select-brand').click(function() {
+            $('#brandName').val($(this).data('name'));
             $('#brandModal').modal('hide');
         });
 
-        // ============================
-        // Art Color Form
-        // ============================
-        $('#artColorForm').on('submit', function(e) {
-            e.preventDefault();
-            const art = $('#artInput').val().trim();
-            const color = $('#colorInput').val().trim();
-            if (!art || !color) {
-                alert("Both Art and Color are required.");
-                return;
-            }
-
+        // ArtColor save
+        $('#saveArtColorBtn').click(function() {
+            let art = $('#artInput').val();
+            let color = $('#colorInput').val();
             $('#artColor').val(`${art} - ${color}`);
             $('#artColorModal').modal('hide');
-            $('#artInput, #colorInput').val('');
         });
 
-        // ============================
-        // BOM Table logic
-        // ============================
-        $('#bomTable').DataTable({
-            paging: true,
-            ordering: true,
-            info: false
-        });
-
-        // Select All
-        $('#selectAll').on('change', function() {
-            $('.rowCheckbox').prop('checked', $(this).prop('checked'));
-        });
-
-        // Delete selected rows
-        $('#deleteSelected').on('click', function() {
-            const ids = $('.rowCheckbox:checked').map(function() {
-                return $(this).val();
-            }).get();
-            if (!ids.length) return alert('Please select at least one material to delete.');
-            if (confirm('Are you sure you want to delete selected materials?')) {
-                $.post("<?= base_url('bom/delete_bulk_material') ?>", {
-                    ids: ids
-                }, function() {
-                    location.reload();
-                });
+        // Save Entire BOM
+        $('#saveEntireBomBtn').click(function() {
+            const fgId = $('#fgItemId').val();
+            if (!fgId) {
+                alert("Select FG first.");
+                return;
             }
-        });
-
-        // ============================
-        // Save BOM AJAX
-        // ============================
-        $('#saveBomBtn').on('click', function() {
-            const fgItemId = $('#fgItemId').val();
-            if (!fgItemId) {
-                alert("Please select Finish Good before saving.");
+            if (hfgData.length === 0) {
+                alert("Add at least one HFG.");
                 return;
             }
 
-            const fgItemName = $('#fgDescription').val();
-            const fgUnit = $('#fgUnit').val();
-            const fgCategory = $('#fgCategoryName').val();
-            const brandName = $('#brandName').val();
-            const artColor = $('#artColor').val();
-
-            const materials = [];
-            $('#bomTable tbody tr').each(function() {
-                const materialId = $(this).find('.material-id').text();
-                if (!materialId) return;
-                materials.push({
-                    material_id: materialId,
-                    material_name: $(this).find('.material-name').text(),
-                    unit_name: $(this).find('td:nth-child(5)').text(),
-                    category_name: $(this).find('td:nth-child(4)').text(),
-                    qty: $(this).find('.material-qty').val()
+            let bomData = [];
+            hfgData.forEach(hfg => {
+                hfg.materials.forEach(mt => {
+                    bomData.push({
+                        id_fg_item: fgId,
+                        id_hfg_item: hfg.id,
+                        id_mt_item: mt.id,
+                        fg_kode_item: $('#fgKodeItem').val(),
+                        hfg_kode_item: hfg.kode,
+                        mt_kode_item: mt.kode,
+                        fg_item_name: $('#fgDescription').val(),
+                        hfg_item_name: hfg.name,
+                        mt_item_name: mt.name,
+                        fg_item_category: $('#fgCategoryName').val(),
+                        hfg_item_category: hfg.catName,
+                        mt_item_category: mt.catName,
+                        fg_unit: $('#fgUnit').val(),
+                        hfg_unit: hfg.unit,
+                        mt_unit: mt.unit,
+                        brand_name: $('#brandName').val(),
+                        artcolor_name: $('#artColor').val(),
+                        bom_qty: mt.qty
+                    });
                 });
             });
-
-            if (!materials.length) {
-                alert("Please add at least one material.");
-                return;
-            }
 
             $.ajax({
                 url: "<?= base_url('purchasing/save_bom') ?>",
                 type: "POST",
-                data: JSON.stringify({
-                    fg_item_id: fgItemId,
-                    fg_item_name: fgItemName,
-                    fg_unit_name: fgUnit,
-                    fg_category_name: fgCategory,
-                    brand_name: brandName,
-                    art_color: artColor,
-                    materials: materials
-                }),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                success: function(resp) {
-                    alert("BOM saved successfully!");
+                data: JSON.stringify(bomData),
+                contentType: "application/json",
+                success: function() {
+                    alert("BOM saved!");
                     location.reload();
                 },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                    alert("Error saving BOM. Please try again.");
+                error: function() {
+                    alert("Error saving BOM.");
                 }
             });
         });

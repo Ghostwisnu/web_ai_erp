@@ -14,17 +14,17 @@
     <h1 class="h3 mb-4 text-gray-800"><?= $title; ?></h1>
 
     <!-- Error message and flash message -->
-    <?= form_error('Production/output', '<div class="ui negative message">', '</div>'); ?>
+    <?= form_error('production', '<div class="ui negative message">', '</div>'); ?>
     <?= $this->session->flashdata('message'); ?>
 
     <div class="mb-3">
-        <a href="<?= base_url('Production/output'); ?>" class="ui blue button">
+        <a href="<?= base_url('production/output'); ?>" class="ui blue button">
             <i class="arrow left icon"></i> Back to List
         </a>
     </div>
 
     <!-- Form -->
-    <form id="productionReportForm" method="POST" action="<?= base_url('production/save_production_report'); ?>">
+    <form id="productionReportForm" method="POST" action="<?= base_url('production/save_fix_production'); ?>">
 
         <!-- RO Header Data -->
         <div class="ui segment">
@@ -61,13 +61,14 @@
                         <th>Size</th>
                         <th>Quantity</th>
                         <th>WO Size Qty</th>
+                        <th>Previous Qty</th> <!-- Previous Qty -->
                         <th>Missing Category</th>
                         <th>Missing Qty</th>
+                        <th>Total Size Qty</th> <!-- Total Size Qty -->
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($sizerun)): ?>
-                        <?php $total_qty = 0; ?>
                         <?php foreach ($sizerun as $size): ?>
                             <tr>
                                 <td><?= htmlspecialchars($size['size_name']); ?></td>
@@ -76,8 +77,11 @@
                                 </td>
                                 <td class="totalQty"><?= $size['size_qty']; ?></td>
                                 <td>
+                                    <input type="number" class="form-control previousQty" name="previous_qty[<?= $size['id_sizerun']; ?>]" value="<?= $size['previous_qty']; ?>" readonly />
+                                </td>
+                                <td>
                                     <select name="mis_category[<?= $size['id_sizerun']; ?>]" class="form-control">
-                                        <option value="">Select Category</option>
+                                        <option value="sudah lengkap">Select Category</option>
                                         <option value="belum produksi">Belum Produksi</option>
                                         <option value="bisa repair">Bisa di Repair</option>
                                         <option value="tidak bisa repair">Tidak Bisa di Repair</option>
@@ -86,15 +90,18 @@
                                 <td>
                                     <input type="number" name="mis_qty[<?= $size['id_sizerun']; ?>]" class="form-control" min="0" value="0" />
                                 </td>
+                                <td class="totalSizeQty">
+                                    <?php
+                                    // Menampilkan Total Size Qty: Sizerun Qty + Previous Qty
+                                    $totalSizeQty = $size['size_qty'] + $size['previous_qty'];
+                                    echo $totalSizeQty;
+                                    ?>
+                                </td> <!-- Display total size qty per row -->
                             </tr>
-                            <?php $total_qty += $size['size_qty']; ?>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
-            <div class="ui message">
-                <strong>Total Quantity (Sizerun + Missing): <span id="totalSizerun"><?= $total_qty; ?></span></strong>
-            </div>
         </div>
 
         <!-- WO Quantity Validation -->
@@ -140,7 +147,8 @@
             $('#sizerunTable tbody tr').each(function() {
                 const $row = $(this);
                 const val = parseInt($row.find('input[name^="sizerun_qty"]').val(), 10) || 0;
-                totalSizerunQty += val;
+                const previousQty = parseInt($row.find('input[name^="previous_qty"]').val(), 10) || 0; // Ambil Previous Qty
+                totalSizerunQty += (val + previousQty);
 
                 const woSizeQty = parseInt($row.find('.totalQty').text(), 10) || 0;
 
@@ -150,6 +158,10 @@
 
                 // Menambahkan mis_qty ke total sizerun qty
                 const totalRowQty = val + misQty; // Total per row (Sizerun + Missing)
+                const totalSizeQty = val + previousQty; // Menghitung Total Size Qty (Sizerun + Previous Qty)
+
+                // Menampilkan Total Size Qty di tabel
+                $row.find('.totalSizeQty').text(totalSizeQty); // Menampilkan Total Size Qty per baris
 
                 if (val > woSizeQty) {
                     isValid = false;
@@ -164,7 +176,7 @@
 
             // Total gabungan
             const totalQty = totalSizerunQty + totalMissingQty;
-            $totalEl.text(totalQty);
+            $totalEl.text(totalQty); // Menampilkan Total Qty
 
             // Status pesan
             $vm.removeClass('positive negative warning');
@@ -192,9 +204,9 @@
             return formIsValid;
         }
 
-        // --- HANDLER INPUT & SUBMIT ---
-        // Re-validate saat input SIZERUN berubah
-        $(document).on('input', 'input[name^="sizerun_qty"], input[name^="mis_qty"]', function() {
+        // --- HANDLER INPUT & SUBMIT --- 
+        // Re-validate saat input SIZERUN atau MISSING berubah
+        $(document).on('input', 'input[name^="sizerun_qty"], input[name^="mis_qty"], input[name^="previous_qty"]', function() {
             validateQty();
         });
 
@@ -205,7 +217,7 @@
             }
         });
 
-        // --- STATE AWAL ---
+        // --- STATE AWAL --- 
         validateQty();
     });
 </script>

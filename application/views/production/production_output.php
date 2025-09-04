@@ -1,3 +1,29 @@
+<style>
+    /* Highlight baris yang salah tanpa ubah font */
+    .row-error td {
+        background-color: #ffe6e6 !important;
+        font-size: inherit;
+        color: inherit;
+    }
+
+    /* Styling untuk setiap status */
+    .status-menunggu-dikirim {
+        background-color: yellow;
+    }
+
+    .status-sudah-dikirim {
+        background-color: blue;
+    }
+
+    .status-sudah-lengkap {
+        background-color: green;
+    }
+
+    .status-belum-lengkap {
+        background-color: red;
+    }
+</style>
+
 <!-- Begin Page Content -->
 <div class="container-fluid">
 
@@ -27,7 +53,7 @@
                 <th>WO Number</th>
                 <th>Kode Request Order</th>
                 <th>Tgl Request Order</th>
-                <th>Status</th> <!-- New Column -->
+                <th>Status</th>
                 <th style="width:140px;">Detail</th>
                 <th style="width:160px;">Action</th>
             </tr>
@@ -46,11 +72,26 @@
                         <td><?= htmlspecialchars($ro['kode_ro']); ?></td>
                         <td><?= htmlspecialchars($ro['last_created_at']); ?></td>
                         <?php
-                        $status = strtolower($ro['status_ro'] ?? '');
-                        $labelClass = 'grey';
-                        if ($status === 'menunggu dikirim') $labelClass = 'yellow';
-                        elseif ($status === 'sudah dikirim') $labelClass = 'green';
-                        elseif ($status === 'dibatalkan') $labelClass = 'red';
+                        $status = strtolower($ro['status_ro'] ?? ''); // Mengambil status dan memastikan lowercase
+                        $labelClass = 'grey'; // Default class untuk status yang tidak dikenal
+
+                        // Tentukan kelas berdasarkan status
+                        switch ($status) {
+                            case 'menunggu dikirim':
+                                $labelClass = 'yellow'; // Kuning untuk 'Menunggu Dikirim'
+                                break;
+                            case 'sudah dikirim':
+                                $labelClass = 'blue'; // Biru untuk 'Sudah Dikirim'
+                                break;
+                            case 'produksi sudah lengkap':
+                                $labelClass = 'green'; // Hijau untuk 'Produksi Sudah Lengkap'
+                                break;
+                            case 'produksi belum lengkap':
+                                $labelClass = 'red'; // Merah untuk 'Produksi Belum Lengkap'
+                                break;
+                            default:
+                                $labelClass = 'grey'; // Default jika status tidak ditemukan
+                        }
                         ?>
                         <td><span class="ui <?= $labelClass; ?> label"><?= htmlspecialchars($ro['status_ro'] ?? '-'); ?></span></td>
                         <td>
@@ -59,17 +100,37 @@
                             </button>
                         </td>
                         <td>
+                            <!-- Tombol Create Report hanya muncul jika statusnya 'Sudah Dikirim' -->
                             <a href="<?= base_url('production/production_report?kode_ro=' . urlencode($ro['kode_ro'])) ?>" class="ui small orange button" id="createReportBtn-<?= $ro['kode_ro']; ?>"
                                 <?php if (strtolower($ro['status_ro']) !== 'sudah dikirim') echo 'hidden'; ?>>
                                 <i class="edit icon"></i> Create Report
                             </a>
+
+                            <!-- Tombol Delete -->
                             <button type="button" class="ui small red button btn-soft-delete" data-kode="<?= htmlspecialchars($ro['kode_ro']); ?>">
                                 <i class="trash icon"></i> Delete
                             </button>
+
+                            <!-- Tombol Export Report hanya muncul jika statusnya 'Produksi Sudah Lengkap' -->
                             <a href="<?= base_url('production/create_production_report?kode_ro=' . urlencode($ro['kode_ro'])) ?>" class="ui small purple button" id="exportReportBtn-<?= $ro['kode_ro']; ?>"
-                                <?php if (strtolower($ro['status_ro']) !== 'sudah dikirim') echo 'hidden'; ?>>
+                                <?php if (strtolower($ro['status_ro']) !== 'produksi sudah lengkap') echo 'hidden'; ?>>
                                 <i class="chart bar icon"></i> Export Report
                             </a>
+
+                            <!-- Tombol hanya muncul jika status "Produksi Belum Lengkap" -->
+                            <?php if ($status === 'produksi belum lengkap'): ?>
+                                <a href="<?= base_url('production/fix_production/' . urlencode($ro['kode_ro'])); ?>" class="ui small yellow button">
+                                    <i class="exclamation triangle icon"></i> Perbaiki Produksi
+                                </a>
+                            <?php endif; ?>
+
+
+                            <!-- Tombol hanya muncul jika status "Produksi Sudah Lengkap" -->
+                            <?php if ($status === 'produksi sudah lengkap'): ?>
+                                <button type="button" class="ui small green button">
+                                    <i class="download icon"></i> Export Produksi
+                                </button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -84,51 +145,6 @@
 <!-- /.container-fluid -->
 </div>
 <!-- End of Main Content -->
-
-<!-- Modal Detail -->
-<div class="ui modal" id="roDetailModal" role="dialog" aria-modal="true">
-    <i class="close icon" aria-label="Close"></i>
-    <div class="header">
-        Detail Request Order
-    </div>
-    <div class="content scrolling">
-        <div id="roDetailLoading" class="ui active inverted dimmer" style="display:none;">
-            <div class="ui text loader">Loading</div>
-        </div>
-
-        <div id="roDetailError" class="ui negative message" style="display:none;"></div>
-
-        <div id="roDetailHeader" class="ui relaxed list" style="display:none;">
-            <div class="item"><strong>WO Number:</strong> <span id="d_wo"></span></div>
-            <div class="item"><strong>Kode RO:</strong> <span id="d_kode"></span></div>
-            <div class="item"><strong>Status:</strong> <span id="d_status"></span></div>
-            <div class="item"><strong>From Dept:</strong> <span id="d_from"></span></div>
-            <div class="item"><strong>To Dept:</strong> <span id="d_to"></span></div>
-            <div class="item"><strong>Tanggal RO:</strong> <span id="d_tgl"></span></div>
-            <div class="item"><strong>Created By:</strong> <span id="d_user"></span></div>
-            <div class="item"><strong>Created At:</strong> <span id="d_created"></span></div>
-            <div class="item"><strong>Total Sizerun:</strong> <span id="d_total_sizerun"></span></div> <!-- NEW -->
-        </div>
-
-        <h4 class="ui dividing header" id="roDetailLinesTitle" style="display:none;">Items</h4>
-        <table class="ui celled table" id="roDetailLines" style="display:none;">
-            <thead>
-                <tr>
-                    <th style="width:60px;">#</th>
-                    <th>Kode Item</th>
-                    <th>Item Name</th>
-                    <th>Category</th>
-                    <th>Unit</th>
-                    <th class="right aligned">Qty</th>
-                </tr>
-            </thead>
-            <tbody><!-- JS --></tbody>
-        </table>
-    </div>
-    <div class="actions">
-        <div class="ui grey button deny">Close</div>
-    </div>
-</div>
 
 <script>
     $(function() {

@@ -838,4 +838,188 @@ class General_model extends CI_Model
         $row = $this->db->get()->row_array();
         return (float)($row['checkin_qty'] ?? 0);
     }
+
+    public function save_production_report($wo_number, $kode_ro, $sizerun_qty, $mis_category, $mis_qty)
+    {
+        // Ambil data WO untuk validasi
+        $wo_qty = $this->get_size_qty_for_validation($wo_number);  // Ambil total WO qty dari tabel pr_ro
+
+        // Validasi jika WO Quantity tidak ditemukan
+        if (!$wo_qty) {
+            return 'WO Quantity not found';
+        }
+
+        // Hitung total quantity dari sizerun (untuk validasi)
+        $total_sizerun_qty = array_sum($sizerun_qty);  // Total qty dari sizerun
+        $total_missing_qty = array_sum($mis_qty);  // Total qty dari missing (jika ada)
+        $total_qty = $total_sizerun_qty + $total_missing_qty;  // Total gabungan jika perlu
+
+        // Simpan data sizerun ke pr_output
+        foreach ($sizerun_qty as $size_id => $qty) {
+            $size_name = $this->get_size_name($size_id);  // Ambil size_name dari database
+            if (empty($size_name)) {
+                $size_name = 'Unknown Size';  // Fallback jika size_name kosong
+            }
+
+            // Ambil brand_name dan artcolor_name dari pr_ro
+            $this->db->select('brand_name, artcolor_name');
+            $this->db->from('pr_ro');
+            $this->db->where('wo_number', $wo_number);
+            $this->db->where('id_wo', $this->input->post('id_wo'));  // Pastikan mengambil data berdasarkan WO
+            $query = $this->db->get();
+            $ro_data = $query->row();
+
+            $brand_name = $ro_data ? $ro_data->brand_name : 'Unknown Brand';
+            $artcolor_name = $ro_data ? $ro_data->artcolor_name : 'Unknown Artcolor';
+
+            // Mengambil mis_category dan mis_qty dari input
+            $mis_category_val = isset($mis_category[$size_id]) ? $mis_category[$size_id] : '';  // Ambil kategori missing
+            $mis_qty_val = isset($mis_qty[$size_id]) ? $mis_qty[$size_id] : 0;  // Ambil qty missing
+
+            // Tentukan kategori mis_category berdasarkan data yang diterima
+            if (empty($mis_category_val)) {
+                $mis_category_val = 'sudah lengkap';  // Default kategori jika kosong
+            }
+
+            // Insert data ke pr_output untuk Sizerun
+            $data_output = [
+                'id_ro' => $this->input->post('id_ro'),
+                'id_wo' => $this->input->post('id_wo'),
+                'wo_number' => $wo_number,
+                'kode_ro' => $kode_ro,
+                'size_name' => $size_name,
+                'size_qty' => $qty,
+                'mis_category' => $mis_category_val,  // Menyimpan kategori missing atau sizerun
+                'mis_qty' => $mis_qty_val,  // Menyimpan jumlah missing jika ada
+                'created_at' => date('Y-m-d H:i:s'),
+                'created_by' => $this->session->userdata('email'),
+                'brand_name' => $brand_name,  // Menambahkan brand_name
+                'artcolor_name' => $artcolor_name  // Menambahkan artcolor_name
+            ];
+
+            $this->db->insert('pr_output', $data_output);  // Insert data sizerun dan missing
+        }
+
+        // Status produksi berdasarkan perbandingan total qty sizerun dengan WO qty
+        if ($total_sizerun_qty < $wo_qty) {
+            // Jika total sizerun qty lebih kecil dari WO qty, statusnya adalah "Produksi Belum Lengkap"
+            $status = 'produksi belum lengkap';
+        } else {
+            // Jika total sizerun qty sudah sesuai dengan WO qty, statusnya adalah "Produksi Sudah Lengkap"
+            $status = 'produksi sudah lengkap';
+        }
+
+        // Update status RO
+        $data_ro_status = [
+            'status_ro' => $status,
+            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_by' => $this->session->userdata('email'),
+        ];
+
+        // Update status RO berdasarkan kode_ro
+        $this->db->where('kode_ro', $kode_ro);
+        $this->db->update('pr_ro', $data_ro_status);
+
+        return $status;  // Kembalikan status yang diupdate
+    }
+    /**
+     * Fungsi untuk mengambil size_name berdasarkan size_id
+     */
+    public function get_size_name($size_id)
+    {
+        // Ambil nama size berdasarkan size_id dari tabel purchasing_sizerun
+        $this->db->select('size_name');
+        $this->db->from('purchasing_sizerun');
+        $this->db->where('id_sizerun', $size_id); // Gunakan id_sizerun untuk mengambil data
+        $query = $this->db->get();
+
+        $row = $query->row();
+        return $row ? $row->size_name : '';  // Kembalikan size_name atau string kosong
+    }
+
+    /**
+     * Ambil jumlah total untuk WO (untuk validasi)
+     */
+    public function get_size_qty_for_validation($wo_number)
+    {
+        // Ambil size_qty yang unik berdasarkan wo_number
+        $this->db->select('size_qty');
+        $this->db->from('pr_ro');
+        $this->db->where('wo_number', $wo_number);
+        $this->db->where('delete_status', 0);  // Pastikan hanya yang belum dihapus
+        $this->db->distinct();  // Mengambil satu baris saja jika ada duplikasi wo_number dan size_qty
+        $result = $this->db->get()->row_array();
+
+        // Kembalikan nilai size_qty jika ada, jika tidak ada kembalikan 0
+        return $result['size_qty'] ?? 0;
+    }
+    public function update_production_data($kode_ro, $sizerun_qty, $mis_category, $mis_qty)
+    {
+        $this->db->trans_start();
+
+        foreach ($sizerun_qty as $size_id => $qty) {
+            // Ambil informasi size berdasarkan size_id
+            $size_name = $this->get_size_name($size_id);
+
+            // Ambil brand_name dan artcolor_name dari pr_ro
+            $this->db->select('brand_name, artcolor_name');
+            $this->db->from('pr_ro');
+            $this->db->where('kode_ro', $kode_ro);
+            $query = $this->db->get();
+            $ro_data = $query->row();
+
+            $brand_name = $ro_data ? $ro_data->brand_name : 'Unknown Brand';
+            $artcolor_name = $ro_data ? $ro_data->artcolor_name : 'Unknown Artcolor';
+
+            // Data untuk diupdate
+            $data_update = [
+                'size_qty' => $qty,  // Update size_qty
+                'mis_category' => $mis_category[$size_id] ?? 'produksi sudah lengkap',
+                'mis_qty' => $mis_qty[$size_id] ?? 0,
+                'updated_at' => date('Y-m-d H:i:s'),
+                'updated_by' => $this->session->userdata('email'),
+                'brand_name' => $brand_name,  // Menambahkan brand_name
+                'artcolor_name' => $artcolor_name
+            ];
+
+            // Update data size run berdasarkan size_id dan kode_ro
+            $this->db->where('kode_ro', $kode_ro);
+            $this->db->where('size_name', $size_name);
+            $this->db->update('pr_output', $data_update);
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+    public function update_size_qty($kode_ro, $size_name, $updated_size_qty, $mis_category, $mis_qty)
+    {
+        // Siapkan data yang akan diupdate
+        $data_update = [
+            'size_qty' => $updated_size_qty,  // Update size_qty
+            'mis_category' => $mis_category ?? 'produksi sudah lengkap',  // Kategori missing
+            'mis_qty' => $mis_qty ?? 0,  // Quantity missing
+            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_by' => $this->session->userdata('email'),
+        ];
+
+        // Update data di pr_output berdasarkan kode_ro dan size_name
+        $this->db->where('kode_ro', $kode_ro);
+        $this->db->where('size_name', $size_name);
+        $this->db->update('pr_output', $data_update);
+    }
+
+    public function get_previous_qty($kode_ro, $size_name)
+    {
+        // Ambil previous_qty berdasarkan kode_ro dan size_name dari pr_output
+        $this->db->select('size_qty'); // Mengambil kolom size_qty yang mewakili previous_qty
+        $this->db->from('pr_output');
+        $this->db->where('kode_ro', $kode_ro);
+        $this->db->where('size_name', $size_name);
+        $query = $this->db->get();
+
+        $result = $query->row(); // Ambil data pertama (hanya ada satu row)
+
+        // Kembalikan size_qty (previous_qty), jika tidak ada data, kembalikan 0
+        return $result ? (int)$result->size_qty : 0;
+    }
 }

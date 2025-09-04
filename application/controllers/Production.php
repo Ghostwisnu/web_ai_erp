@@ -221,34 +221,138 @@ class Production extends CI_Controller
         $this->load->view('templates/footer');
     }
 
-
-
     public function save_production_report()
     {
-        // Ambil data yang diperlukan
-        $wo_number = $this->input->post('wo_number');
-        $sizerun_qty = $this->input->post('sizerun_qty');  // Array of size quantities
-
-        // Ambil total size_qty berdasarkan wo_number
-        $wo_qty = $this->General_model->get_wo_qty_for_validation($wo_number);
-
-        // Menghitung total quantity dari sizerun
-        $total_size_qty = array_sum($sizerun_qty);
-
-        // Validasi apakah total size_qty sesuai dengan wo_qty
-        if ($total_size_qty !== $wo_qty) {
-            // Jika tidak sesuai, lakukan tindakan misalnya menyimpan missing quantity
-            $missing_qty = $wo_qty - $total_size_qty;
-            // Handle missing quantity di sini (misalnya masukkan ke dalam DB)
+        // Cek apakah email ada dalam session
+        $email = $this->session->userdata('email');
+        if (!$email) {
+            $this->session->set_flashdata('message', 'Session email not found!');
+            redirect('Production/output');
+            return;
         }
 
-        // Lakukan operasi lain seperti menyimpan report
-        // (Simpan sizerun_qty dan data lainnya ke database)
+        // Ambil data yang diperlukan dari form
+        $wo_number = $this->input->post('wo_number');
+        $kode_ro = $this->input->post('kode_ro');
+        $sizerun_qty = $this->input->post('sizerun_qty');  // Array of size quantities
+        $missing_qty = $this->input->post('mis_qty');  // Array of missing quantities
+        $mis_category = $this->input->post('mis_category');  // Array of missing categories
 
-        // Redirect ke halaman yang sesuai setelah berhasil
-        $this->session->set_flashdata('message', 'Production Report saved successfully!');
-        redirect('production');
+        // Validasi apakah sizerun_qty dan missing_qty ada dan terisi
+        if (empty($wo_number) || empty($kode_ro) || empty($sizerun_qty)) {
+            $this->session->set_flashdata('message', 'Required fields are missing or invalid!');
+            redirect('Production/output');
+            return;
+        }
+
+        // Panggil fungsi untuk menyimpan laporan produksi
+        $status = $this->General_model->save_production_report($wo_number, $kode_ro, $sizerun_qty, $mis_category, $missing_qty);
+
+        // Feedback ke pengguna
+        $this->session->set_flashdata('message', "Production report saved successfully. Status: $status");
+        redirect('Production/output');
     }
+
+    // Fungsi untuk menampilkan halaman perbaikan produksi
+    public function fix_production($kode_ro)
+    {
+        $header = $this->General_model->get_row_where('pr_ro', ['kode_ro' => $kode_ro]);
+
+        // Ambil data sizerun untuk kode_ro
+        $sizerun = $this->General_model->get_wo_size_details($header['wo_number']);
+        $wo_qty = $this->General_model->get_size_qty_for_validation($header['wo_number']);
+
+        // Ambil previous_qty untuk masing-masing size_name dari pr_output
+        foreach ($sizerun as &$size) {
+            $size['previous_qty'] = $this->General_model->get_previous_qty($kode_ro, $size['size_name']);
+        }
+        // Ambil data user untuk topbar/sidebar
+        $user = $this->General_model->get_row_where('master_user', [
+            'user_email' => $this->session->userdata('email')
+        ]);
+
+        $data = [
+            'title' => 'Perbaiki Produksi',
+            'header' => $header,
+            'sizerun' => $sizerun,
+            'wo_qty' => $wo_qty,
+            'user'    => $user
+        ];
+
+        $this->load->view('templates/header',  $data);
+        $this->load->view('templates/sidebar', $data);
+        $this->load->view('templates/topbar',  $data);
+        $this->load->view('production/fix_production_view', $data);  // Pastikan view sudah ada
+        $this->load->view('templates/footer');
+    }
+
+    public function save_fix_production()
+    {
+        // Ambil data yang dikirim dari form
+        $wo_number = $this->input->post('wo_number');
+        $kode_ro = $this->input->post('kode_ro');
+        $sizerun_qty = $this->input->post('sizerun_qty');  // Array qty
+        $mis_category = $this->input->post('mis_category');  // Array kategori missing
+        $mis_qty = $this->input->post('mis_qty');  // Array qty missing
+
+        // Ambil data untuk validasi
+        $wo_qty = $this->General_model->get_size_qty_for_validation($wo_number);  // Ambil total WO qty dari pr_ro
+
+        // Hitung total qty sizerun + previous_qty dan total missing qty
+        $total_sizerun_qty = 0;
+        $total_missing_qty = 0;
+        $isValid = true;
+
+        // Proses per ukuran (sizerun)
+        foreach ($sizerun_qty as $size_id => $qty) {
+            $size_name = $this->General_model->get_size_name($size_id);  // Ambil size_name
+            $previous_qty = $this->General_model->get_previous_qty($kode_ro, $size_name);  // Ambil previous_qty dari pr_output
+
+            // Hitung total qty per baris (sizerun qty + previous qty + missing qty)
+            $updated_size_qty = $qty + $previous_qty + ($mis_qty[$size_id] ?? 0);  // Jumlahkan qty baru + previous_qty + missing_qty
+            $total_sizerun_qty += $updated_size_qty;
+            $total_missing_qty += $mis_qty[$size_id];  // Tambahkan qty missing
+
+            // Validasi apakah qty tidak melebihi batas
+            if ($updated_size_qty > $wo_qty) {
+                $isValid = false;  // Flag menjadi invalid jika ada qty yang melebihi batas
+            }
+
+            // Update data size run berdasarkan size_id dan kode_ro
+            $this->General_model->update_size_qty($kode_ro, $size_name, $updated_size_qty, $mis_category[$size_id], $mis_qty[$size_id]);
+        }
+
+        // Cek apakah total sizerun sesuai dengan WO qty
+        if ($total_sizerun_qty == $wo_qty) {
+            // Jika sesuai, set status menjadi "produksi sudah lengkap"
+            $status = 'produksi sudah lengkap';
+        } else {
+            // Jika tidak sesuai, hitung apakah total sizerun + missing qty sesuai dengan WO qty
+            if (($total_sizerun_qty + $total_missing_qty) == $wo_qty) {
+                $status = 'produksi belum lengkap';
+            } else {
+                // Jika masih tidak sesuai, set status menjadi "produksi belum lengkap"
+                $status = 'produksi belum lengkap';
+            }
+        }
+
+        // Update status RO
+        $data_ro_status = [
+            'status_ro' => $status,
+            'updated_at' => date('Y-m-d H:i:s'),
+            'updated_by' => $this->session->userdata('email'),
+        ];
+
+        // Update status RO berdasarkan kode_ro
+        $this->db->where('kode_ro', $kode_ro);
+        $this->db->update('pr_ro', $data_ro_status);
+
+        // Redirect ke halaman setelah berhasil update
+        $this->session->set_flashdata('message', 'Report berhasil disimpan dan status RO diupdate.');
+        redirect('production/output');
+    }
+
+
 
     // --- AJAX: daftar WO (distinct per wo_number), fokus ke FG ---
     public function wo_list()

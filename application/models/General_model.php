@@ -526,6 +526,14 @@ class General_model extends CI_Model
         return $this->db->query($sql, [$wo_number, $wo_number])->result_array();
     }
 
+    public function get_hfg_by_wo($wo_number)
+    {
+        $this->db->select('hfg_kode_item, hfg_item_name');
+        $this->db->from('purchasing_wo');
+        $this->db->where('wo_number', $wo_number);
+        $query = $this->db->get();
+        return $query->result_array();
+    }
 
     public function get_hfg_data($wo_number)
     {
@@ -839,7 +847,7 @@ class General_model extends CI_Model
         return (float)($row['checkin_qty'] ?? 0);
     }
 
-    public function save_production_report($wo_number, $kode_ro, $sizerun_qty, $mis_category, $mis_qty)
+    public function save_production_report($wo_number, $kode_ro, $sizerun_qty, $mis_category, $mis_qty, $hfg_items = [])
     {
         // Ambil data WO untuk validasi
         $wo_qty = $this->get_size_qty_for_validation($wo_number);  // Ambil total WO qty dari tabel pr_ro
@@ -881,7 +889,7 @@ class General_model extends CI_Model
                 $mis_category_val = 'sudah lengkap';  // Default kategori jika kosong
             }
 
-            // Insert data ke pr_output untuk Sizerun
+            // Gabungkan data HFG dengan data sizerun dalam satu insert
             $data_output = [
                 'id_ro' => $this->input->post('id_ro'),
                 'id_wo' => $this->input->post('id_wo'),
@@ -897,15 +905,27 @@ class General_model extends CI_Model
                 'artcolor_name' => $artcolor_name  // Menambahkan artcolor_name
             ];
 
-            $this->db->insert('pr_output', $data_output);  // Insert data sizerun dan missing
+            // Insert data untuk Sizerun terlebih dahulu
+            // $this->db->insert('pr_output', $data_output);
+
+            // Gabungkan dengan HFG dan lakukan insert hanya sekali
+            if (!empty($hfg_items)) {
+                foreach ($hfg_items as $hfg_item) {
+                    // Menambahkan kode_item HFG ke data_output
+                    $data_output['kode_item'] = $hfg_item;  // Menambahkan kode_item HFG ke data_output
+                    // Insert data ke pr_output untuk sizerun + HFG dalam satu insert
+                    $this->db->insert('pr_output', $data_output);
+                }
+            } else {
+                // Jika tidak ada HFG, tetap lakukan insert untuk sizerun saja
+                $this->db->insert('pr_output', $data_output);
+            }
         }
 
         // Status produksi berdasarkan perbandingan total qty sizerun dengan WO qty
         if ($total_sizerun_qty < $wo_qty) {
-            // Jika total sizerun qty lebih kecil dari WO qty, statusnya adalah "Produksi Belum Lengkap"
             $status = 'produksi belum lengkap';
         } else {
-            // Jika total sizerun qty sudah sesuai dengan WO qty, statusnya adalah "Produksi Sudah Lengkap"
             $status = 'produksi sudah lengkap';
         }
 
@@ -922,6 +942,7 @@ class General_model extends CI_Model
 
         return $status;  // Kembalikan status yang diupdate
     }
+
     /**
      * Fungsi untuk mengambil size_name berdasarkan size_id
      */

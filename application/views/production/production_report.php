@@ -5,12 +5,24 @@
         font-size: inherit;
         color: inherit;
     }
+
+    .four.wide.column p {
+        color: #333;
+        /* Warna font gelap */
+    }
+
+    .four.wide.column strong {
+        color: #333;
+        /* Warna font gelap untuk label (strong) */
+    }
+
+    .ui.green.button {
+        cursor: pointer;
+    }
 </style>
 
 <!-- Begin Page Content -->
 <div class="container-fluid">
-
-    <!-- Page Heading -->
     <h1 class="h3 mb-4 text-gray-800"><?= $title; ?></h1>
 
     <!-- Error message and flash message -->
@@ -21,10 +33,39 @@
         <a href="<?= base_url('Production/output'); ?>" class="ui blue button">
             <i class="arrow left icon"></i> Back to List
         </a>
+        <button type="button" class="ui blue button" id="openModalBtn">
+            <i class="eye icon"></i> Lihat Daftar HFG
+        </button>
     </div>
 
     <!-- Form -->
     <form id="productionReportForm" method="POST" action="<?= base_url('production/save_production_report'); ?>">
+
+        <!-- Modal -->
+        <!-- Modal -->
+        <div class="ui modal" id="hfgModal">
+            <div class="header">
+                Daftar HFG
+            </div>
+            <div class="content">
+                <table class="ui celled table" id="hfgTable">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Kode Item</th>
+                            <th>Nama Item</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data HFG akan dimuat di sini melalui AJAX -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="actions">
+                <button class="ui red button" id="closeModalBtn">Tutup</button>
+            </div>
+        </div>
+
 
         <!-- RO Header Data -->
         <div class="ui segment">
@@ -33,21 +74,25 @@
                 <div class="four wide column">
                     <strong>WO Number:</strong>
                     <p><?= htmlspecialchars($header['wo_number']); ?></p>
-                    <!-- Hidden Input for WO Number -->
                     <input type="hidden" name="wo_number" value="<?= htmlspecialchars($header['wo_number']); ?>" />
                 </div>
                 <div class="four wide column">
                     <strong>Kode RO:</strong>
                     <p><?= htmlspecialchars($header['kode_ro']); ?></p>
-                    <!-- Hidden Input for Kode RO -->
                     <input type="hidden" name="kode_ro" value="<?= htmlspecialchars($header['kode_ro']); ?>" />
                 </div>
                 <div class="four wide column">
                     <strong>Dept:</strong>
                     <p><?= htmlspecialchars($header['from_dept']); ?></p>
-                    <!-- Hidden Input for ID RO and ID WO -->
                     <input type="hidden" name="id_ro" value="<?= $header['id_ro']; ?>" />
                     <input type="hidden" name="id_wo" value="<?= $header['id_wo']; ?>" />
+                </div>
+
+                <div class="four wide column">
+                    <h4 class="ui header">Selected HFG</h4>
+                    <!-- Hidden Input untuk Menyimpan Data HFG yang Dipilih -->
+                    <input type="hidden" name="hfg_items" id="hfgItemsInput">
+                    <p id="selectedHFG">Belum ada item yang dipilih</p>
                 </div>
             </div>
         </div>
@@ -121,35 +166,103 @@
 
 <script>
     $(document).ready(function() {
-        // --- INIT ELEMENTS --- 
         const $saveBtn = $('#saveBtn');
         const $roQtyEl = $('#roQty');
         const $totalEl = $('#totalSizerun');
         const $vm = $('#validationMessage');
         const $vs = $('#validationStatus');
 
+        // Ketika tombol "Select" diklik
+        $(document).on('click', '.select-btn', function() {
+            const selectedHFG = $(this).data('hfg');
+            const selectedHFGName = $(this).closest('tr').find('td').eq(2).text(); // Ambil nama item dari kolom ketiga
+
+            // Tampilkan item yang dipilih di bagian bawah form
+            $('#selectedHFG').text(`Kode Item: ${selectedHFG}, Nama Item: ${selectedHFGName}`);
+
+            // Menyimpan data yang dipilih dalam hidden input
+            let currentItems = JSON.parse($('#hfgItemsInput').val() || '[]'); // Ambil data yang sudah ada di hidden input (jika ada)
+            if (!currentItems.includes(selectedHFG)) {
+                currentItems.push(selectedHFG); // Tambahkan kode item HFG yang dipilih ke array
+                $('#hfgItemsInput').val(JSON.stringify(currentItems)); // Update hidden input
+            }
+
+            // Tutup modal setelah memilih
+            $('#hfgModal').modal('hide');
+        });
+
+        // Ketika tombol "Lihat Daftar HFG" diklik, buka modal dan ambil data HFG dari server
+        $('#openModalBtn').on('click', function() {
+            const woNumber = $("input[name='wo_number']").val();
+
+            $.ajax({
+                url: '<?= base_url('production/get_hfg_data'); ?>',
+                type: 'GET',
+                data: {
+                    wo_number: woNumber
+                },
+                success: function(response) {
+                    let data = JSON.parse(response);
+                    let tableBody = $('#hfgTable tbody');
+                    tableBody.empty(); // Clear existing data
+
+                    // Filter unique HFG items based on hfg_kode_item
+                    let uniqueData = [];
+                    let seenItems = new Set();
+                    data.forEach(item => {
+                        if (!seenItems.has(item.hfg_kode_item)) {
+                            uniqueData.push(item);
+                            seenItems.add(item.hfg_kode_item);
+                        }
+                    });
+
+                    // Populate table with unique items as buttons
+                    if (uniqueData.length > 0) {
+                        uniqueData.forEach(item => {
+                            tableBody.append(`
+                            <tr>
+                                <td><button class="ui blue button select-btn" data-hfg="${item.hfg_kode_item}">Select</button></td>
+                                <td>${item.hfg_kode_item}</td>
+                                <td>${item.hfg_item_name}</td>
+                            </tr>
+                        `);
+                        });
+                    } else {
+                        tableBody.append('<tr><td colspan="3">Tidak ada data HFG</td></tr>');
+                    }
+
+                    // Show modal
+                    $('#hfgModal').modal('show');
+                },
+                error: function() {
+                    alert('Error fetching data');
+                }
+            });
+        });
+
+        // Close modal
+        $('#closeModalBtn').on('click', function() {
+            $('#hfgModal').modal('hide');
+        });
+
         // --- VALIDASI --- 
         function validateQty() {
-            let totalSizerunQty = 0; // HANYA dari tabel sizerun
-            let totalMissingQty = 0; // HANYA dari tabel missing
+            let totalSizerunQty = 0;
+            let totalMissingQty = 0;
             const roQty = parseInt($roQtyEl.text(), 10) || 0;
             let isValid = true;
             let invalidRow = false;
 
-            // Hitung & validasi SIZERUN
             $('#sizerunTable tbody tr').each(function() {
                 const $row = $(this);
                 const val = parseInt($row.find('input[name^="sizerun_qty"]').val(), 10) || 0;
                 totalSizerunQty += val;
 
                 const woSizeQty = parseInt($row.find('.totalQty').text(), 10) || 0;
-
-                // Mengambil mis_qty (missing quantity) untuk kategori missing
                 const misQty = parseInt($row.find('input[name^="mis_qty"]').val(), 10) || 0;
                 totalMissingQty += misQty;
 
-                // Menambahkan mis_qty ke total sizerun qty
-                const totalRowQty = val + misQty; // Total per row (Sizerun + Missing)
+                const totalRowQty = val + misQty;
 
                 if (val > woSizeQty) {
                     isValid = false;
@@ -162,11 +275,9 @@
                 }
             });
 
-            // Total gabungan
             const totalQty = totalSizerunQty + totalMissingQty;
             $totalEl.text(totalQty);
 
-            // Status pesan
             $vm.removeClass('positive negative warning');
             let msg = '';
 
@@ -185,27 +296,22 @@
             }
             $vs.html(msg);
 
-            // Enable/disable Save (berdasarkan total gabungan)
             const formIsValid = isValid && totalQty === roQty;
             $saveBtn.prop('disabled', !formIsValid);
 
             return formIsValid;
         }
 
-        // --- HANDLER INPUT & SUBMIT ---
-        // Re-validate saat input SIZERUN berubah
         $(document).on('input', 'input[name^="sizerun_qty"], input[name^="mis_qty"]', function() {
             validateQty();
         });
 
-        // Cegah submit form jika belum valid
         $('#productionReportForm').on('submit', function(e) {
             if (!validateQty()) {
                 e.preventDefault();
             }
         });
 
-        // --- STATE AWAL ---
         validateQty();
     });
 </script>

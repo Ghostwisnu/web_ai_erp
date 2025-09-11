@@ -231,12 +231,20 @@ class Production extends CI_Controller
             return;
         }
 
-        // Ambil data yang diperlukan dari form
+        // Ambil data dari form
         $wo_number = $this->input->post('wo_number');
         $kode_ro = $this->input->post('kode_ro');
-        $sizerun_qty = $this->input->post('sizerun_qty');  // Array of size quantities
-        $missing_qty = $this->input->post('mis_qty');  // Array of missing quantities
-        $mis_category = $this->input->post('mis_category');  // Array of missing categories
+        $sizerun_qty = $this->input->post('sizerun_qty');
+        $mis_category = $this->input->post('mis_category');
+        $mis_qty = $this->input->post('mis_qty');
+        $hfg_items = json_decode($this->input->post('hfg_items'), true);  // Ambil data HFG yang dipilih
+
+        // Validasi apakah ada item HFG yang dipilih
+        if (empty($hfg_items)) {
+            $this->session->set_flashdata('message', 'Please select at least one HFG item!');
+            redirect('Production/output');
+            return;
+        }
 
         // Validasi apakah sizerun_qty dan missing_qty ada dan terisi
         if (empty($wo_number) || empty($kode_ro) || empty($sizerun_qty)) {
@@ -245,13 +253,21 @@ class Production extends CI_Controller
             return;
         }
 
-        // Panggil fungsi untuk menyimpan laporan produksi
-        $status = $this->General_model->save_production_report($wo_number, $kode_ro, $sizerun_qty, $mis_category, $missing_qty);
+        // Panggil fungsi model untuk menyimpan data
+        $status = $this->General_model->save_production_report(
+            $wo_number,
+            $kode_ro,
+            $sizerun_qty,
+            $mis_category,
+            $mis_qty,
+            $hfg_items
+        );
 
         // Feedback ke pengguna
         $this->session->set_flashdata('message', "Production report saved successfully. Status: $status");
         redirect('Production/output');
     }
+
 
     // Fungsi untuk menampilkan halaman perbaikan produksi
     public function fix_production($kode_ro)
@@ -596,6 +612,14 @@ class Production extends CI_Controller
 
         return $this->generate_report($ro_details);
     }
+
+    public function get_hfg_data()
+    {
+        $wo_number = $this->input->get('wo_number');
+        $data = $this->General_model->get_hfg_by_wo($wo_number);
+        echo json_encode($data);
+    }
+
 
     // Helper function to fetch request order details
     private function get_ro_details($kode_ro)

@@ -123,12 +123,11 @@
 <div class="ui modal wide-scrollable-modal" id="woModal">
     <div class="header">Select Work Order</div>
     <div class="content">
-        <div class="ui search">
+        <div class="ui segment">
             <div class="ui icon input" style="width: 100%; margin-bottom: 10px;">
                 <input class="prompt" type="text" placeholder="Search WO...">
                 <i class="search icon"></i>
             </div>
-            <div class="results"></div>
         </div>
 
         <div style="overflow-x: auto; width: 100%;">
@@ -149,6 +148,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Global Quantity Modal (small) -->
 <div class="ui modal small-modal" id="globalQtyModal">
@@ -214,6 +214,15 @@
             autofocus: false
         });
         $('.ui.dropdown').dropdown();
+
+        // Fungsi pencarian pada input
+        $('.ui.segment .prompt').on('input', function() {
+            var query = $(this).val().toLowerCase(); // Ambil input pencarian
+            $('#woTable tbody tr').each(function() {
+                var text = $(this).text().toLowerCase(); // Ambil teks dalam row
+                $(this).toggle(text.indexOf(query) > -1); // Tampilkan atau sembunyikan berdasarkan kecocokan
+            });
+        });
 
         // ---- Searchable dropdown departments ----
         (function setupDeptDropdowns() {
@@ -411,48 +420,83 @@
             const itemCode = $(this).data('itemcode') || '';
             const itemName = $(this).data('itemname') || 'Unnamed Item';
             const unit = $(this).data('unit') || '';
-            const category = $(this).data('category') || '';
+            const category = $(this).data('category') || ''; // Ambil category
             const artcolor = $(this).data('artcolor') || '';
+
+            // Tentukan apakah kategori "Material" atau "Barang Setengah Jadi"
+            const isMaterial = category.toLowerCase() === 'material';
+            const isBarangSetengahJadi = category.toLowerCase() === 'barang setengah jadi';
 
             const row = `
         <tr data-id="${id}" data-itemcode="${itemCode}">
-          <td><input type="checkbox" class="delete-row-checkbox" data-id="${id}" /></td>
-          <td>${woNumber}</td>
-          <td>${itemName}</td>
-          <td>${unit}</td>
-          <td>${category}</td>
-          <td>${brand}</td>
-          <td>${artcolor}</td>
-          <td><input type="number" class="mini ui icon input item-qty" value="${bomCons}" readonly min="0" step="any" /></td>
-          <td>
-            <button type="button" class="mini ui  blue button mb-2 add-global-qty" data-id="${id}" data-itemcode="${itemCode}" data-itemname="${itemName}">Add Global Qty</button>
-            <input type="number" class="mini ui icon input global-qty-input" value="0" readonly>
-          </td>
-          <td>
-            <button type="button" class="mini ui green button mb-2 add-size-run" data-id="${id}" data-brand="${brand}">Add Size Run</button>
-            <button class="ui mini button size-run-btn" data-id="${id}" data-itemname="${itemName}">View Size Run</button>
-          </td>
+            <td><input type="checkbox" class="delete-row-checkbox" data-id="${id}" /></td>
+            <td>${woNumber}</td>
+            <td>${itemName}</td>
+            <td>${unit}</td>
+            <td>${category}</td>
+            <td>${brand}</td>
+            <td>${artcolor}</td>
+            <td><input type="number" class="mini ui icon input item-qty" value="${bomCons}" readonly min="0" step="any" /></td>
+            <td>
+                <button type="button" class="mini ui blue button mb-2 add-global-qty" data-id="${id}" data-itemcode="${itemCode}" data-itemname="${itemName}">Add Global Qty</button>
+                <input type="number" class="mini ui icon input global-qty-input" value="0" readonly>
+            </td>
+            <td>
+                <button type="button" class="mini ui green button mb-2 add-size-run" data-id="${id}" data-brand="${brand}">Add Size Run</button>
+                <button class="ui mini button size-run-btn" data-id="${id}" data-itemname="${itemName}">View Size Run</button>
+            </td>
         </tr>
-      `;
+    `;
+
             $('#createTable tbody').append(row);
             $('#woModal').modal('hide');
             updateSaveButtonState();
-            if (typeof updateSerialNumbers === 'function') updateSerialNumbers();
+
+            // **Menambahkan Validasi pada Input Checkin QTY**
+            const $row = $('#createTable tbody tr[data-id="' + id + '"]');
+            const $checkinInput = $row.find('.global-qty-input');
+            const $itemQtyInput = $row.find('.item-qty');
+
+            // Jika kategori "Barang Setengah Jadi", biarkan checkin qty 0 dan aktifkan save
+            if (isBarangSetengahJadi) {
+                $checkinInput.prop('readonly', false); // Biarkan user mengisi Checkin QTY
+            } else {
+                $checkinInput.prop('readonly', true); // Nonaktifkan input jika bukan kategori "Barang Setengah Jadi"
+            }
+
+            // Jika kategori "Material" dan Checkin QTY = 0, maka berikan alert
+            $checkinInput.on('input', function() {
+                const checkinValue = parseFloat($checkinInput.val());
+                if (isMaterial && checkinValue === 0) {
+                    alert('Checkin QTY tidak boleh 0 untuk kategori Material!');
+                    $checkinInput.val(bomCons); // Kembalikan ke nilai default jika salah
+                }
+                // Set state tombol Save berdasarkan kondisi Checkin QTY dan kategori
+                updateSaveButtonState();
+            });
+
+            // Perbarui tombol save berdasarkan kondisi Checkin QTY
+            function updateSaveButtonState() {
+                const $rows = $('#createTable tbody tr');
+                let canSave = true;
+
+                $rows.each(function() {
+                    const id = $(this).data('id');
+                    const $checkinInput = $(this).find('.global-qty-input');
+                    const checkinValue = parseFloat($checkinInput.val()) || 0;
+                    const category = $(this).find('td:eq(4)').text().toLowerCase(); // Ambil kategori
+
+                    if (category === 'material' && checkinValue <= 0) {
+                        canSave = false; // Untuk kategori Material, tombol Save hanya aktif jika Checkin QTY > 0
+                    }
+
+                    // Untuk kategori Barang Setengah Jadi, tombol Save tetap aktif meskipun Checkin QTY = 0
+                });
+
+                $('#saveBtn').prop('disabled', !canSave); // Aktifkan/Nonaktifkan tombol Save
+            }
         });
 
-        // ---- Delete checked rows ----
-        $('#deleteCheckedRows').on('click', function() {
-            $('#createTable tbody tr').each(function() {
-                const $tr = $(this);
-                const checkbox = $tr.find('.delete-row-checkbox');
-                if (checkbox.is(':checked')) {
-                    const id = $tr.data('id');
-                    sizeRunData = sizeRunData.filter(it => it.id !== id); // cleanup size run records
-                    $tr.remove();
-                }
-            });
-            updateSaveButtonState();
-        });
 
         // ---- Enable/disable Save ----
         $(document).on('input', '.global-qty-input', updateSaveButtonState);
@@ -557,12 +601,13 @@
             const rows = []; // --> untuk wr_stock
             const sizerun_rows = []; // --> untuk wr_sizerun
 
+            let canSave = true; // Flag untuk mengecek apakah tombol Save boleh diaktifkan
+
             $('#createTable tbody tr').each(function() {
                 const $tr = $(this);
                 const id_wo = parseInt($tr.data('id'), 10) || 0;
 
-                // mapping kolom sesuai header di tabel createTable
-                // 0:Action, 1:Wo Number, 2:Name, 3:Unit, 4:Category, 5:Brand, 6:Art/Color, 7:Consumption, 8:Checkin QTY, 9:Checkin Size
+                // Mapping kolom sesuai header di tabel createTable
                 const wo_number = tdText($tr, 1);
                 const item_name = tdText($tr, 2);
                 const unit_name = tdText($tr, 3);
@@ -574,9 +619,14 @@
                 const kode_item = $tr.data('itemcode') || '';
                 const checkin = ($tr.find('.global-qty-input').val() || '').toString().trim();
 
-                // Lewati baris bila checkin kosong/0 (opsional — hapus blok ini kalau tetap mau simpan 0)
-                if (checkin === '' || parseFloat(checkin) <= 0) {
-                    return; // continue
+                // Cek jika kategori adalah "Material" dan Checkin QTY <= 0
+                if (category_name.toLowerCase() === 'material' && (checkin === '' || parseFloat(checkin) <= 0)) {
+                    canSave = false; // Tombol Save dinonaktifkan
+                }
+
+                // Lewati baris bila Checkin QTY kosong/0, tetapi hanya untuk kategori "Material"
+                if (category_name.toLowerCase() === 'material' && (checkin === '' || parseFloat(checkin) <= 0)) {
+                    return; // continue, jika kategori "Material" dan Checkin QTY <= 0
                 }
 
                 // ----- wr_stock row -----
@@ -619,11 +669,19 @@
                 }
             });
 
+            // Jika ada item kategori "Material" dengan Checkin QTY <= 0, tampilkan pesan peringatan
+            if (!canSave) {
+                alert('Checkin QTY tidak boleh 0 untuk kategori Material!');
+                return; // Hentikan proses penyimpanan
+            }
+
+            // Proses penyimpanan data hanya jika ada data valid untuk disimpan
             if (rows.length === 0) {
                 alert('Tidak ada data dengan Checkin > 0 untuk disimpan.');
                 return;
             }
 
+            // Lanjutkan proses menyimpan data setelah validasi
             $.ajax({
                 url: '<?= site_url('warehouse/save_stock'); ?>',
                 type: 'POST',
@@ -648,5 +706,6 @@
                 }
             });
         });
+
     });
 </script>

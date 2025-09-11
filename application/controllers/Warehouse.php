@@ -488,11 +488,11 @@ class Warehouse extends CI_Controller
 
     public function save_stock()
     {
-        $rows_json       = $this->input->post('rows');
-        $sizerun_json    = $this->input->post('sizerun_rows');
+        $rows_json = $this->input->post('rows');
+        $sizerun_json = $this->input->post('sizerun_rows');
 
-        $rows            = json_decode($rows_json, true) ?: [];
-        $sizerun_rows    = json_decode($sizerun_json, true) ?: [];
+        $rows = json_decode($rows_json, true) ?: [];
+        $sizerun_rows = json_decode($sizerun_json, true) ?: [];
 
         if (empty($rows)) {
             return $this->output
@@ -500,46 +500,54 @@ class Warehouse extends CI_Controller
                 ->set_output(json_encode(['success' => false, 'message' => 'No rows to save']));
         }
 
-        $now    = date('Y-m-d H:i:s');
-        $user   = $this->session->userdata('email') ?: 'system';
+        $now = date('Y-m-d H:i:s');
+        $user = $this->session->userdata('email') ?: 'system';
 
         $this->db->trans_begin();
 
         // ---- wr_stock ----
         $insertStock = [];
         foreach ($rows as $r) {
+            $checkin = (string)($r['checkin'] ?? '0');
+            $category_name = $r['category_name'] ?? '';
+
+            // Validasi Checkin QTY berdasarkan kategori
+            if ($category_name === 'Material' && $checkin <= 0) {
+                // Jika kategori "Material" dan Checkin QTY <= 0, lewati baris ini
+                continue;
+            }
+
+            // Menyiapkan data untuk batch insert
             $insertStock[] = [
-                'id_wo'          => (int)($r['id_wo'] ?? 0),
-                'id_sj'          => 0, // isi jika punya id_sj header
-                'kode_sj'        => $r['kode_sj']        ?? '',
-                'no_sj'          => $r['no_sj']          ?? '',
-                'kode_bom'       => $r['kode_bom']       ?? '',
-                'wo_number'      => $r['wo_number']      ?? '',
-                'kode_item'      => $r['kode_item']      ?? '',
-                'category_name'  => $r['category_name']  ?? '',
-                'unit_name'      => $r['unit_name']      ?? '',
-                'item_name'      => $r['item_name']      ?? '',
-                'brand'          => $r['brand']          ?? '',
-                'artcolor'       => $r['artcolor']       ?? '',
-                'bom_cons'       => (string)($r['bom_cons'] ?? '0'),
-                'checkin'        => (string)($r['checkin'] ?? '0'),
-                'checkout'       => (string)($r['checkout'] ?? ''), // kosong saat create
-                'created_by'     => $user,
-                'created_at'     => $now,
-                'date_arrive'    => !empty($r['date_arrive']) ? $r['date_arrive'] : null,
-                // kalau kamu juga menyimpan from_dept & to_dept di tabel wr_stock (pastikan kolomnya ada):
-                'from_dept'      => $r['from_dept'] ?? null,
-                'to_dept'        => $r['to_dept']   ?? null,
+                'id_wo' => (int)($r['id_wo'] ?? 0),
+                'id_sj' => 0, // isi jika punya id_sj header
+                'kode_sj' => $r['kode_sj'] ?? '',
+                'no_sj' => $r['no_sj'] ?? '',
+                'kode_bom' => $r['kode_bom'] ?? '',
+                'wo_number' => $r['wo_number'] ?? '',
+                'kode_item' => $r['kode_item'] ?? '',
+                'category_name' => $r['category_name'] ?? '',
+                'unit_name' => $r['unit_name'] ?? '',
+                'item_name' => $r['item_name'] ?? '',
+                'brand' => $r['brand'] ?? '',
+                'artcolor' => $r['artcolor'] ?? '',
+                'bom_cons' => (string)($r['bom_cons'] ?? '0'),
+                'checkin' => $checkin,
+                'checkout' => (string)($r['checkout'] ?? ''),
+                'created_by' => $user,
+                'created_at' => $now,
+                'date_arrive' => !empty($r['date_arrive']) ? $r['date_arrive'] : null,
+                'from_dept' => $r['from_dept'] ?? null,
+                'to_dept' => $r['to_dept'] ?? null,
             ];
         }
+
         if (!empty($insertStock)) {
             $this->db->insert_batch('wr_stock', $insertStock);
         }
 
         // ---- wr_sizerun ----
         if (!empty($sizerun_rows)) {
-
-            // Optional: resolve id_brand untuk semua brand_name unik (sekali saja)
             $brandCache = [];
             foreach ($sizerun_rows as $sr) {
                 $bn = trim($sr['brand_name'] ?? '');
@@ -550,18 +558,17 @@ class Warehouse extends CI_Controller
 
             $insertSize = [];
             foreach ($sizerun_rows as $sr) {
-                $brandName = $sr['brand_name'] ?? '';
                 $insertSize[] = [
-                    'id_wo'       => (int)($sr['id_wo'] ?? 0),
-                    'id_brand'    => $brandName !== '' ? (int)($brandCache[$brandName] ?? 0) : null,
-                    'kode_sj'     => $sr['kode_sj']   ?? '',
-                    'kode_item'   => $sr['kode_item'] ?? '',
-                    'wo_number'   => $sr['wo_number'] ?? '',
-                    'brand_name'  => $brandName,
-                    'size_name'   => $sr['size_name'] ?? '',
-                    'sizeq_qty'   => (string)($sr['sizeq_qty'] ?? '0'), // ikut nama kolom DB
-                    'created_by'  => $user,
-                    'created_at'  => $now
+                    'id_wo' => (int)($sr['id_wo'] ?? 0),
+                    'id_brand' => isset($brandCache[$sr['brand_name']]) ? (int)($brandCache[$sr['brand_name']] ?? 0) : null,
+                    'kode_sj' => $sr['kode_sj'] ?? '',
+                    'kode_item' => $sr['kode_item'] ?? '',
+                    'wo_number' => $sr['wo_number'] ?? '',
+                    'brand_name' => $sr['brand_name'] ?? '',
+                    'size_name' => $sr['size_name'] ?? '',
+                    'sizeq_qty' => (string)($sr['sizeq_qty'] ?? '0'),
+                    'created_by' => $user,
+                    'created_at' => $now
                 ];
             }
 

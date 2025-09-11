@@ -304,71 +304,136 @@ class Production extends CI_Controller
 
     public function save_fix_production()
     {
-        // Ambil data yang dikirim dari form
-        $wo_number = $this->input->post('wo_number');
-        $kode_ro = $this->input->post('kode_ro');
-        $sizerun_qty = $this->input->post('sizerun_qty');  // Array qty
-        $mis_category = $this->input->post('mis_category');  // Array kategori missing
-        $mis_qty = $this->input->post('mis_qty');  // Array qty missing
+        // Ambil data dari form
+        $wo_number    = $this->input->post('wo_number');
+        $kode_ro      = $this->input->post('kode_ro');
+        $sizerun_qty  = $this->input->post('sizerun_qty');  // [size_id => qty_baru]
+        $mis_category = $this->input->post('mis_category'); // [size_id => kategori]
+        $mis_qty      = $this->input->post('mis_qty');      // [size_id => qty_missing]
 
-        // Ambil data untuk validasi
-        $wo_qty = $this->General_model->get_size_qty_for_validation($wo_number);  // Ambil total WO qty dari pr_ro
-
-        // Hitung total qty sizerun + previous_qty dan total missing qty
-        $total_sizerun_qty = 0;
-        $total_missing_qty = 0;
-        $isValid = true;
-
-        // Proses per ukuran (sizerun)
-        foreach ($sizerun_qty as $size_id => $qty) {
-            $size_name = $this->General_model->get_size_name($size_id);  // Ambil size_name
-            $previous_qty = $this->General_model->get_previous_qty($kode_ro, $size_name);  // Ambil previous_qty dari pr_output
-
-            // Hitung total qty per baris (sizerun qty + previous qty + missing qty)
-            $updated_size_qty = $qty + $previous_qty + ($mis_qty[$size_id] ?? 0);  // Jumlahkan qty baru + previous_qty + missing_qty
-            $total_sizerun_qty += $updated_size_qty;
-            $total_missing_qty += $mis_qty[$size_id];  // Tambahkan qty missing
-
-            // Validasi apakah qty tidak melebihi batas
-            if ($updated_size_qty > $wo_qty) {
-                $isValid = false;  // Flag menjadi invalid jika ada qty yang melebihi batas
-            }
-
-            // Update data size run berdasarkan size_id dan kode_ro
-            $this->General_model->update_size_qty($kode_ro, $size_name, $updated_size_qty, $mis_category[$size_id], $mis_qty[$size_id]);
+        if (empty($wo_number) || empty($kode_ro) || !is_array($sizerun_qty)) {
+            $this->session->set_flashdata('message', 'Input tidak valid.');
+            redirect('production/output');
+            return;
         }
 
-        // Cek apakah total sizerun sesuai dengan WO qty
+        // Total WO utk validasi status
+        $wo_qty = $this->General_model->get_size_qty_for_validation($wo_number);
+
+        // === DELTA untuk wr_stock: hanya sizerun BARU (tanpa previous, tanpa missing) ===
+        $delta_sizerun_total = array_sum(array_map('intval', $sizerun_qty));
+
+        $total_sizerun_qty = 0; // untuk perhitungan status (updated total per size)
+        $total_missing_qty = 0;
+        $isValid           = true;
+
+        $this->db->trans_start();
+
+        // Proses per size: update pr_output (gabung dengan previous + missing sesuai logika kamu)
+        foreach ($sizerun_qty as $size_id => $qty_baru) {
+            $qty_baru = (int)$qty_baru;
+
+            $size_name    = $this->General_model->get_size_name($size_id);
+            $previous_qty = (int)$this->General_model->get_previous_qty($kode_ro, $size_name);
+
+            $mis_qty_val      = isset($mis_qty[$size_id]) ? (int)$mis_qty[$size_id] : 0;
+            $mis_category_val = isset($mis_category[$size_id]) ? $mis_category[$size_id] : 'sudah lengkap';
+
+            // TOTAL TERKINI per size (untuk disimpan ke pr_output & validasi status)
+            $updated_size_qty = $qty_baru + $previous_qty + $mis_qty_val;
+
+            $total_sizerun_qty += $updated_size_qty;
+            $total_missing_qty += $mis_qty_val;
+
+            if ($updated_size_qty > $wo_qty) {
+                $isValid = false;
+            }
+
+            // Update baris per size ke pr_output sesuai fungsi kamu
+            $this->General_model->update_size_qty($kode_ro, $size_name, $updated_size_qty, $mis_category_val, $mis_qty_val);
+        }
+
+        // --- BEGIN: Sinkron wr_stock.checkin pakai DELTA saja (akumulatif tambah) ---
+        // Ambil brand/artcolor utk isi insert baru
+        $this->db->select('brand_name, artcolor_name, id_wo');
+        $this->db->from('pr_ro');
+        $this->db->where('wo_number', $wo_number);
+        $this->db->where('kode_ro', $kode_ro);
+        $ro_row = $this->db->get()->row();
+
+        $brand_name_once    = $ro_row ? $ro_row->brand_name    : null;
+        $artcolor_name_once = $ro_row ? $ro_row->artcolor_name : null;
+        $id_wo_once         = $ro_row ? (int)$ro_row->id_wo     : (int)$this->input->post('id_wo');
+
+        // Ambil daftar kode_item yang terkait (kalau form kirim hfg_items, bisa pakai itu langsung)
+        $kode_items = $this->db->select('DISTINCT kode_item', false)
+            ->from('pr_output')
+            ->where('wo_number', $wo_number)
+            ->where('kode_ro', $kode_ro)
+            ->where('kode_item IS NOT NULL', null, false)
+            ->get()->result_array();
+
+        if (!empty($kode_items) && $delta_sizerun_total > 0) {
+            foreach ($kode_items as $row) {
+                $kode_item = $row['kode_item'];
+
+                $existing = $this->db->select('id_sj, checkin')
+                    ->get_where('wr_stock', [
+                        'wo_number' => $wo_number,
+                        'kode_item' => $kode_item
+                    ])->row();
+
+                if ($existing) {
+                    // Tambahkan hanya DELTA sizerun baru
+                    $this->db->set('checkin', "CAST(COALESCE(`checkin`, '0') AS UNSIGNED) + " . (int)$delta_sizerun_total, false);
+                    $this->db->where('id_sj', $existing->id_sj);
+                    $this->db->update('wr_stock');
+                } else {
+                    // Insert baru dengan nilai checkin = DELTA
+                    $data_stock = [
+                        'id_wo'      => $id_wo_once,
+                        'wo_number'  => $wo_number,
+                        'kode_item'  => $kode_item,
+                        'brand'      => $brand_name_once,
+                        'artcolor'   => $artcolor_name_once,
+                        'checkin'    => (string)(int)$delta_sizerun_total,
+                        'created_by' => $this->session->userdata('email'),
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ];
+                    $this->db->insert('wr_stock', $data_stock);
+                }
+            }
+        }
+        // --- END: Sinkron wr_stock.checkin ---
+
+        // Status produksi (pakai total updated untuk validasi)
         if ($total_sizerun_qty == $wo_qty) {
-            // Jika sesuai, set status menjadi "produksi sudah lengkap"
             $status = 'produksi sudah lengkap';
         } else {
-            // Jika tidak sesuai, hitung apakah total sizerun + missing qty sesuai dengan WO qty
-            if (($total_sizerun_qty + $total_missing_qty) == $wo_qty) {
-                $status = 'produksi belum lengkap';
-            } else {
-                // Jika masih tidak sesuai, set status menjadi "produksi belum lengkap"
-                $status = 'produksi belum lengkap';
-            }
+            $status = (($total_sizerun_qty + $total_missing_qty) == $wo_qty)
+                ? 'produksi belum lengkap'
+                : 'produksi belum lengkap';
         }
 
         // Update status RO
         $data_ro_status = [
-            'status_ro' => $status,
+            'status_ro'  => $status,
             'updated_at' => date('Y-m-d H:i:s'),
             'updated_by' => $this->session->userdata('email'),
         ];
-
-        // Update status RO berdasarkan kode_ro
         $this->db->where('kode_ro', $kode_ro);
         $this->db->update('pr_ro', $data_ro_status);
 
-        // Redirect ke halaman setelah berhasil update
-        $this->session->set_flashdata('message', 'Report berhasil disimpan dan status RO diupdate.');
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            $this->session->set_flashdata('message', 'Terjadi kesalahan saat menyimpan.');
+        } else {
+            $this->session->set_flashdata('message', 'Report berhasil disimpan. wr_stock ditambah dengan delta sizerun baru, dan status RO diperbarui.');
+        }
+
         redirect('production/output');
     }
-
-
 
     // --- AJAX: daftar WO (distinct per wo_number), fokus ke FG ---
     public function wo_list()

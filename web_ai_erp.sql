@@ -339,7 +339,7 @@ CREATE TABLE IF NOT EXISTS `master_menu` (
   `id_menu` int NOT NULL AUTO_INCREMENT,
   `menu_name` varchar(252) COLLATE utf8mb4_general_ci NOT NULL,
   PRIMARY KEY (`id_menu`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table web_ai_erp.master_menu: ~3 rows (approximately)
 INSERT INTO `master_menu` (`id_menu`, `menu_name`) VALUES
@@ -349,7 +349,8 @@ INSERT INTO `master_menu` (`id_menu`, `menu_name`) VALUES
 	(6, 'Purchasing'),
 	(7, 'Master Data'),
 	(8, 'Warehouse'),
-	(9, 'Production');
+	(9, 'Production'),
+	(10, 'Executive');
 
 -- Dumping structure for table web_ai_erp.master_size
 CREATE TABLE IF NOT EXISTS `master_size` (
@@ -431,7 +432,7 @@ CREATE TABLE IF NOT EXISTS `master_sub_menu` (
   `menu_is_active` int DEFAULT NULL,
   PRIMARY KEY (`id_submenu`),
   KEY `id_menu` (`id_menu`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table web_ai_erp.master_sub_menu: ~19 rows (approximately)
 INSERT INTO `master_sub_menu` (`id_submenu`, `id_menu`, `submenu_name`, `menu_url`, `menu_icon`, `menu_is_active`) VALUES
@@ -456,7 +457,8 @@ INSERT INTO `master_sub_menu` (`id_submenu`, `id_menu`, `submenu_name`, `menu_ur
 	(19, 8, 'Check Out', 'warehouse/checkout', 'fas fa-fw fa-receipt', 1),
 	(20, 9, 'Request Order', 'production', 'fas fa-fw fa-cart-arrow-down', 1),
 	(21, 9, 'Production Output', 'Production/output', 'fas fa-fw fa-cart-plus', 1),
-	(22, 7, 'Departement', 'master/dept', 'fas fa-fw fa-clipboard-list', 1);
+	(22, 7, 'Departement', 'master/dept', 'fas fa-fw fa-clipboard-list', 1),
+	(23, 10, 'PPS', 'executive', 'fas fa-fw fa-clipboard', 1);
 
 -- Dumping structure for table web_ai_erp.master_unit
 CREATE TABLE IF NOT EXISTS `master_unit` (
@@ -467,7 +469,7 @@ CREATE TABLE IF NOT EXISTS `master_unit` (
   PRIMARY KEY (`id_unit`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 
--- Dumping data for table web_ai_erp.master_unit: ~17 rows (approximately)
+-- Dumping data for table web_ai_erp.master_unit: ~20 rows (approximately)
 INSERT INTO `master_unit` (`id_unit`, `unit_name`, `created_at`, `created_by`) VALUES
 	(1, 'FTK', '2025-08-14 06:29:57', 'Syafiq Wisnu AP'),
 	(2, 'NPR', '2025-08-14 06:35:36', 'Syafiq Wisnu AP'),
@@ -503,7 +505,7 @@ CREATE TABLE IF NOT EXISTS `master_user` (
   PRIMARY KEY (`id_user`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table web_ai_erp.master_user: ~2 rows (approximately)
+-- Dumping data for table web_ai_erp.master_user: ~3 rows (approximately)
 INSERT INTO `master_user` (`id_user`, `user_name`, `user_email`, `user_image`, `user_password`, `user_role_id`, `user_is_active`, `user_created_at`) VALUES
 	(4, 'USER', 'user@mail.com', 'Eun-bi.jpg', '$2y$10$Zq7pay1N4dbxcjqmj6Jy.uLwUCmfkjEuCo9/pV.ioGc6tcR6k64yy', 2, 1, '2025-08-11 04:46:31'),
 	(13, 'Syafiq Wisnu AP', 's.wisnu1106@gmail.com', 'Eun-bi2.jpg', '$2y$10$W7JNoqRn8QuKJ04tubky/uENkn/hXLoZsP92v.08aiO3.Ur765yAa', 1, 1, '2025-08-13 08:06:56'),
@@ -516,7 +518,7 @@ CREATE TABLE IF NOT EXISTS `master_user_access_menu` (
   `id_menu` int NOT NULL,
   PRIMARY KEY (`id_access`),
   KEY `id_role` (`id_role`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table web_ai_erp.master_user_access_menu: ~6 rows (approximately)
 INSERT INTO `master_user_access_menu` (`id_access`, `id_role`, `id_menu`) VALUES
@@ -527,7 +529,8 @@ INSERT INTO `master_user_access_menu` (`id_access`, `id_role`, `id_menu`) VALUES
 	(6, 1, 6),
 	(7, 1, 7),
 	(8, 1, 8),
-	(9, 1, 9);
+	(9, 1, 9),
+	(10, 1, 10);
 
 -- Dumping structure for table web_ai_erp.master_user_role
 CREATE TABLE IF NOT EXISTS `master_user_role` (
@@ -562,28 +565,26 @@ CREATE TABLE IF NOT EXISTS `pr_output` (
   `deleted_at` datetime DEFAULT NULL,
   `deleted_by` varchar(252) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   PRIMARY KEY (`id_output`)
-) ENGINE=InnoDB AUTO_INCREMENT=155 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=262 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table web_ai_erp.pr_output: ~18 rows (approximately)
+-- Dumping data for table web_ai_erp.pr_output: ~16 rows (approximately)
 INSERT INTO `pr_output` (`id_output`, `id_ro`, `id_wo`, `wo_number`, `kode_ro`, `kode_item`, `brand_name`, `artcolor_name`, `size_name`, `size_qty`, `mis_category`, `mis_qty`, `created_at`, `updated_at`, `created_by`, `updated_by`, `deleted_at`, `deleted_by`) VALUES
-	(119, 1, 780, 'po-004', 'CTG-WHS-001', '', 'BLACK STONE', 'EG555 - Black', '36', '1', 'sudah lengkap', '0', '2025-09-04 06:14:22', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
-	(120, 1, 780, 'po-004', 'CTG-WHS-001', '', 'BLACK STONE', 'EG555 - Black', '37', '2', 'sudah lengkap', '0', '2025-09-04 06:14:22', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
-	(121, 1, 780, 'po-004', 'CTG-WHS-001', '', 'BLACK STONE', 'EG555 - Black', '38', '2', 'sudah lengkap', '0', '2025-09-04 06:14:22', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
-	(122, 1, 780, 'po-004', 'CTG-WHS-001', '', 'BLACK STONE', 'EG555 - Black', '39', '2', 'sudah lengkap', '0', '2025-09-04 06:14:22', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
-	(123, 1, 780, 'po-004', 'CTG-WHS-001', '', 'BLACK STONE', 'EG555 - Black', '40', '1', 'sudah lengkap', '0', '2025-09-04 06:14:22', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
-	(124, 1, 780, 'po-004', 'CTG-WHS-001', '', 'BLACK STONE', 'EG555 - Black', '41', '1', 'sudah lengkap', '0', '2025-09-04 06:14:22', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
-	(125, 6, 780, 'po-004', 'CTG-WHS-005', '', 'BLACK STONE', 'EG555 - Black', '36', '1', 'sudah lengkap', '0', '2025-09-04 07:06:04', '2025-09-04 08:32:22', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(126, 6, 780, 'po-004', 'CTG-WHS-005', '', 'BLACK STONE', 'EG555 - Black', '37', '2', 'sudah lengkap', '0', '2025-09-04 07:06:04', '2025-09-04 08:32:22', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(127, 6, 780, 'po-004', 'CTG-WHS-005', '', 'BLACK STONE', 'EG555 - Black', '38', '2', 'sudah lengkap', '0', '2025-09-04 07:06:04', '2025-09-04 08:32:22', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(128, 6, 780, 'po-004', 'CTG-WHS-005', '', 'BLACK STONE', 'EG555 - Black', '39', '2', 'sudah lengkap', '0', '2025-09-04 07:06:04', '2025-09-04 08:32:22', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(129, 6, 780, 'po-004', 'CTG-WHS-005', '', 'BLACK STONE', 'EG555 - Black', '40', '1', 'sudah lengkap', '0', '2025-09-04 07:06:04', '2025-09-04 08:32:22', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(130, 6, 780, 'po-004', 'CTG-WHS-005', '', 'BLACK STONE', 'EG555 - Black', '41', '1', 'sudah lengkap', '0', '2025-09-04 07:06:04', '2025-09-04 08:32:22', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(149, 3, 771, 'po-003', 'CTG-WHS-003', '', 'BLACK STONE', 'EG555 - Black', '36', '2', 'sudah lengkap', '0', '2025-09-04 09:26:09', '2025-09-04 09:26:41', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(150, 3, 771, 'po-003', 'CTG-WHS-003', '', 'BLACK STONE', 'EG555 - Black', '37', '2', 'sudah lengkap', '0', '2025-09-04 09:26:09', '2025-09-04 09:26:41', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(151, 3, 771, 'po-003', 'CTG-WHS-003', '', 'BLACK STONE', 'EG555 - Black', '38', '2', 'sudah lengkap', '0', '2025-09-04 09:26:09', '2025-09-04 09:26:41', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(152, 3, 771, 'po-003', 'CTG-WHS-003', '', 'BLACK STONE', 'EG555 - Black', '39', '2', 'sudah lengkap', '0', '2025-09-04 09:26:09', '2025-09-04 09:26:41', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(153, 3, 771, 'po-003', 'CTG-WHS-003', '', 'BLACK STONE', 'EG555 - Black', '40', '2', 'sudah lengkap', '0', '2025-09-04 09:26:09', '2025-09-04 09:26:41', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
-	(154, 3, 771, 'po-003', 'CTG-WHS-003', '', 'BLACK STONE', 'EG555 - Black', '41', '2', 'sudah lengkap', '0', '2025-09-04 09:26:09', '2025-09-04 09:26:41', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL);
+	(231, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '36', '2', 'sudah lengkap', '0', '2025-09-11 04:51:25', '2025-09-11 04:58:20', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(232, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '37', '2', 'sudah lengkap', '0', '2025-09-11 04:51:25', '2025-09-11 04:58:20', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(233, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '38', '2', 'sudah lengkap', '0', '2025-09-11 04:51:25', '2025-09-11 04:58:20', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(234, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '39', '2', 'sudah lengkap', '0', '2025-09-11 04:51:25', '2025-09-11 04:58:20', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(235, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '40', '2', 'sudah lengkap', '0', '2025-09-11 04:51:25', '2025-09-11 04:58:20', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(236, 3, 771, 'po-003', 'CTG-WHS-003', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '36', '2', 'sudah lengkap', '0', '2025-09-11 07:13:35', '2025-09-11 07:14:33', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(237, 3, 771, 'po-003', 'CTG-WHS-003', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '37', '2', 'sudah lengkap', '0', '2025-09-11 07:13:35', '2025-09-11 07:14:33', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(238, 3, 771, 'po-003', 'CTG-WHS-003', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '38', '2', 'sudah lengkap', '0', '2025-09-11 07:13:35', '2025-09-11 07:14:33', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(239, 3, 771, 'po-003', 'CTG-WHS-003', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '39', '2', 'sudah lengkap', '0', '2025-09-11 07:13:35', '2025-09-11 07:14:33', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(240, 3, 771, 'po-003', 'CTG-WHS-003', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '40', '2', 'sudah lengkap', '0', '2025-09-11 07:13:35', '2025-09-11 07:14:33', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(241, 3, 771, 'po-003', 'CTG-WHS-003', 'HFG-1-0001', 'BLACK STONE', 'EG555 - Black', '41', '2', 'sudah lengkap', '0', '2025-09-11 07:13:35', '2025-09-11 07:14:33', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', NULL, NULL),
+	(257, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0005', 'BLACK STONE', 'EG555 - Black', '36', '1', 'belum produksi', '1', '2025-09-11 08:52:50', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
+	(258, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0005', 'BLACK STONE', 'EG555 - Black', '37', '1', 'belum produksi', '1', '2025-09-11 08:52:50', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
+	(259, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0005', 'BLACK STONE', 'EG555 - Black', '38', '1', 'belum produksi', '1', '2025-09-11 08:52:50', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
+	(260, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0005', 'BLACK STONE', 'EG555 - Black', '39', '1', 'belum produksi', '1', '2025-09-11 08:52:50', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL),
+	(261, 8, 762, 'po-002', 'CTG-WHS-007', 'HFG-1-0005', 'BLACK STONE', 'EG555 - Black', '40', '1', 'belum produksi', '1', '2025-09-11 08:52:50', NULL, 's.wisnu1106@gmail.com', NULL, NULL, NULL);
 
 -- Dumping structure for table web_ai_erp.pr_ro
 CREATE TABLE IF NOT EXISTS `pr_ro` (
@@ -611,17 +612,18 @@ CREATE TABLE IF NOT EXISTS `pr_ro` (
   `delete_by` varchar(252) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `delete_status` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`id_ro`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table web_ai_erp.pr_ro: ~7 rows (approximately)
+-- Dumping data for table web_ai_erp.pr_ro: ~8 rows (approximately)
 INSERT INTO `pr_ro` (`id_ro`, `id_wo`, `wo_number`, `kode_ro`, `kode_item`, `brand_name`, `artcolor_name`, `item_name`, `category`, `unit`, `size_qty`, `ro_qty`, `from_dept`, `to_dept`, `status_ro`, `date_ro`, `created_by`, `updated_by`, `created_at`, `updated_at`, `delete_at`, `delete_by`, `delete_status`) VALUES
 	(1, 780, 'po-004', 'CTG-WHS-001', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '9', '13.5', 'CUTTING', 'WAREHOUSE', 'Produksi Sudah Lengkap', '2025-09-02 00:00:00', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', '2025-09-02 06:51:50', '2025-09-04 06:14:22', NULL, NULL, 0),
 	(2, 789, 'po-005', 'CTG-WHS-002', 'MT-0001', 'ROSSI', 'dsdasd - sadasd', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '6', '6', 'CUTTING', 'WAREHOUSE', 'menunggu dikirim', '2025-09-02 00:00:00', 's.wisnu1106@gmail.com', '', '2025-09-02 07:06:46', NULL, NULL, NULL, 0),
-	(3, 771, 'po-003', 'CTG-WHS-003', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '12', '18', 'CUTTING', 'WAREHOUSE', 'sudah dikirim', '2025-09-02 00:00:00', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', '2025-09-02 08:35:09', '2025-09-04 09:26:41', NULL, NULL, 0),
+	(3, 771, 'po-003', 'CTG-WHS-003', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '12', '18', 'CUTTING', 'WAREHOUSE', 'produksi sudah lengkap', '2025-09-02 00:00:00', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', '2025-09-02 08:35:09', '2025-09-11 07:14:33', NULL, NULL, 0),
 	(4, 771, 'po-003', 'CTG-WHS-004', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '12', '18', 'CUTTING', 'WAREHOUSE', 'menunggu dikirim', '2025-09-03 00:00:00', 's.wisnu1106@gmail.com', '', '2025-09-03 03:04:11', NULL, NULL, NULL, 0),
 	(5, 771, 'po-003', 'CTG-WHS-004', 'MT-0049', 'BLACK STONE', 'EG555 - Black', 'RIPPLE OUTSOLE+LOGO RED (ROSSI)', 'Material', 'NPR', '12', '5.9988', 'CUTTING', 'WAREHOUSE', 'menunggu dikirim', '2025-09-03 00:00:00', 's.wisnu1106@gmail.com', '', '2025-09-03 03:04:11', NULL, NULL, NULL, 0),
 	(6, 780, 'po-004', 'CTG-WHS-005', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '11', '16.5', 'CUTTING', 'WAREHOUSE', 'produksi sudah lengkap', '2025-09-03 00:00:00', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', '2025-09-03 03:11:32', '2025-09-04 08:32:22', NULL, NULL, 0),
-	(7, 780, 'po-004', 'CTG-WHS-006', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '11', '16.5', 'CUTTING', 'WAREHOUSE', 'menunggu dikirim', '2025-09-03 00:00:00', 's.wisnu1106@gmail.com', '', '2025-09-03 03:13:28', NULL, NULL, NULL, 0);
+	(7, 780, 'po-004', 'CTG-WHS-006', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '11', '16.5', 'CUTTING', 'WAREHOUSE', 'menunggu dikirim', '2025-09-03 00:00:00', 's.wisnu1106@gmail.com', '', '2025-09-03 03:13:28', NULL, NULL, NULL, 0),
+	(8, 762, 'po-002', 'CTG-WHS-007', 'MT-0001', 'BLACK STONE', 'EG555 - Black', 'BLACK KIP (HARVEST GLORY)', 'Material', 'FTK', '10', '15', 'CUTTING', 'WAREHOUSE', 'produksi belum lengkap', '2025-09-09 00:00:00', 's.wisnu1106@gmail.com', 's.wisnu1106@gmail.com', '2025-09-09 08:18:25', '2025-09-11 08:52:50', NULL, NULL, 0);
 
 -- Dumping structure for table web_ai_erp.purchasing_bom
 CREATE TABLE IF NOT EXISTS `purchasing_bom` (
@@ -856,9 +858,9 @@ CREATE TABLE IF NOT EXISTS `wr_stock` (
   `created_at` datetime DEFAULT NULL,
   `date_arrive` datetime DEFAULT NULL,
   PRIMARY KEY (`id_sj`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table web_ai_erp.wr_stock: ~12 rows (approximately)
+-- Dumping data for table web_ai_erp.wr_stock: ~18 rows (approximately)
 INSERT INTO `wr_stock` (`id_sj`, `id_wo`, `kode_sj`, `no_sj`, `from_dept`, `to_dept`, `kode_bom`, `wo_number`, `kode_item`, `category_name`, `unit_name`, `item_name`, `brand`, `artcolor`, `bom_cons`, `checkin`, `checkout`, `created_by`, `created_at`, `date_arrive`) VALUES
 	(6, 754, 'IN-003-2025-08-28', 'WH-AI-0004', 'SUPPLIER', 'WAREHOUSE', '', 'po-001', 'MT-0001', 'Material', 'FTK', 'BLACK KIP (HARVEST GLORY)', 'BLACK STONE', 'EG555 - Black', '15', '15', '', 's.wisnu1106@gmail.com', '2025-08-28 06:46:42', '2025-08-28 00:00:00'),
 	(7, 789, 'IN-003-2025-08-28', 'WH-AI-0004', 'SUPPLIER', 'WAREHOUSE', '', 'po-005', 'MT-0001', 'Material', 'FTK', 'BLACK KIP (HARVEST GLORY)', 'ROSSI', 'dsdasd - sadasd', '10', '10', '', 's.wisnu1106@gmail.com', '2025-08-28 06:46:42', '2025-08-28 00:00:00'),
@@ -871,7 +873,13 @@ INSERT INTO `wr_stock` (`id_sj`, `id_wo`, `kode_sj`, `no_sj`, `from_dept`, `to_d
 	(16, 776, 'IN-005-2025-09-03', 'WH-AI-0009', 'SUPPLIER', 'WAREHOUSE', '', 'po-003', 'MT-0049', 'Material', 'NPR', 'RIPPLE OUTSOLE+LOGO RED (ROSSI)', 'BLACK STONE', 'EG555 - Black', '5.9988', '7', '', 's.wisnu1106@gmail.com', '2025-09-03 03:06:52', '2025-09-03 00:00:00'),
 	(17, 780, 'WHS-CTG-004', 'OUT-0001-20250903', 'WAREHOUSE', 'CUTTING', NULL, 'po-004', 'MT-0001', 'Material', 'FTK', 'BLACK KIP (HARVEST GLORY)', 'BLACK STONE', 'EG555 - Black', NULL, NULL, '16.5', 's.wisnu1106@gmail.com', '2025-09-03 03:11:43', '2025-09-03 00:00:00'),
 	(18, 771, 'WHS-CTG-005', 'OUT-0001-20250904', 'WAREHOUSE', 'CUTTING', NULL, 'po-003', 'MT-0001', 'Material', 'FTK', 'BLACK KIP (HARVEST GLORY)', 'BLACK STONE', 'EG555 - Black', NULL, NULL, '18', 's.wisnu1106@gmail.com', '2025-09-04 09:09:43', '2025-09-04 00:00:00'),
-	(19, 771, 'WHS-CTG-006', 'OUT-0001-20250904', 'WAREHOUSE', 'CUTTING', NULL, 'po-003', 'MT-0001', 'Material', 'FTK', 'BLACK KIP (HARVEST GLORY)', 'BLACK STONE', 'EG555 - Black', NULL, NULL, '18', 's.wisnu1106@gmail.com', '2025-09-04 09:28:40', '2025-09-04 00:00:00');
+	(19, 771, 'WHS-CTG-006', 'OUT-0001-20250904', 'WAREHOUSE', 'CUTTING', NULL, 'po-003', 'MT-0001', 'Material', 'FTK', 'BLACK KIP (HARVEST GLORY)', 'BLACK STONE', 'EG555 - Black', NULL, NULL, '18', 's.wisnu1106@gmail.com', '2025-09-04 09:28:40', '2025-09-04 00:00:00'),
+	(20, 764, 'IN-006-2025-09-10', '12313', 'CUTTING', 'WAREHOUSE', '', 'po-002', 'HFG-1-0001', 'Barang Setengah Jadi', 'NPR', 'Output Cutting Black Stone', 'BLACK STONE', 'EG555 - Black', '10', '10', '', 's.wisnu1106@gmail.com', '2025-09-10 03:40:56', '2025-09-10 00:00:00'),
+	(21, 773, 'IN-007-2025-09-11', 'Produksi', 'CUTTING', 'WAREHOUSE', '', 'po-003', 'HFG-1-0001', 'Barang Setengah Jadi', 'NPR', 'Output Cutting Black Stone', 'BLACK STONE', 'EG555 - Black', '12', '12', '', 's.wisnu1106@gmail.com', '2025-09-11 07:12:14', '2025-09-11 00:00:00'),
+	(22, 766, 'IN-008-2025-09-11', 'Production', 'SEWING', 'WAREHOUSE', '', 'po-002', 'HFG-1-0002', 'Barang Setengah Jadi', 'NPR', 'Output Sewing Black Stone', 'BLACK STONE', 'EG555 - Black', '10', '10', '', 's.wisnu1106@gmail.com', '2025-09-11 08:28:17', '2025-09-11 00:00:00'),
+	(25, 768, 'IN-009-2025-09-11', 'Production', 'SEMI WAREHOUSE', 'WAREHOUSE', '', 'po-002', 'HFG-1-0003', 'Barang Setengah Jadi', 'NPR', 'Output Semi Black Stone', 'BLACK STONE', 'EG555 - Black', '10', '10', '', 's.wisnu1106@gmail.com', '2025-09-11 08:30:13', '2025-09-11 00:00:00'),
+	(26, 769, 'IN-010-2025-09-11', 'Production', 'LASTING', 'WAREHOUSE', '', 'po-002', 'HFG-1-0004', 'Barang Setengah Jadi', 'NPR', 'Output Lasting Black Stone', 'BLACK STONE', 'EG555 - Black', '10', '10', '', 's.wisnu1106@gmail.com', '2025-09-11 08:30:36', '2025-09-11 00:00:00'),
+	(27, 770, 'IN-011-2025-09-11', 'Production', 'FINISHING', 'WAREHOUSE', '', 'po-002', 'HFG-1-0005', 'Barang Setengah Jadi', 'NPR', 'Output Finishing Black Stone', 'BLACK STONE', 'EG555 - Black', '10', '5', '', 's.wisnu1106@gmail.com', '2025-09-11 08:33:49', '2025-09-11 00:00:00');
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

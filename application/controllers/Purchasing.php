@@ -334,6 +334,32 @@ class Purchasing extends CI_Controller
         }
     }
 
+    public function detail_wo($wo_number)
+    {
+        // Ambil data dari tabel purchasing_wo berdasarkan WO number
+        $wo_data = $this->General_model->get_row_where('purchasing_wo', ['wo_number' => $wo_number]);
+
+        if ($wo_data) {
+            // Ambil data berdasarkan kategori
+            $fg_data = $this->General_model->get_row_where('purchasing_wo', ['wo_number' => $wo_number, 'fg_kode_item !=' => '']);
+            $hfg_data = $this->General_model->get_row_where('purchasing_wo', ['wo_number' => $wo_number, 'hfg_kode_item !=' => '']);
+            $mt_data = $this->General_model->get_row_where('purchasing_wo', ['wo_number' => $wo_number, 'mt_kode_item !=' => '']);
+
+            // Siapkan data untuk modal
+            $data = [
+                'wo_data' => $wo_data,
+                'fg_data' => $fg_data,
+                'hfg_data' => $hfg_data,
+                'mt_data' => $mt_data
+            ];
+
+            $this->load->view('purchasing/detail_wo_modal', $data); // Load view modal
+        } else {
+            // Jika tidak ada data
+            show_404();
+        }
+    }
+
 
     public function get_item_brand()
     {
